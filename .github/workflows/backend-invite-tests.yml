@@ -1,0 +1,17 @@
+name: Backend invitation logic checks
+on:
+  push:
+    branches: [dev/online-backend-v1]
+  pull_request:
+    paths: ['backend/**']
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test backend/invite_core.test.mjs
