@@ -1,9 +1,9 @@
-name: Backend invitation logic checks
+name: Backend and student A-form checks
 on:
   push:
     branches: [dev/online-backend-v1]
   pull_request:
-    paths: ['backend/**']
+    paths: ['backend/**', 'frontend/**', 'index.html', '.github/workflows/backend-invite-tests.yml']
 permissions:
   contents: read
 jobs:
@@ -14,4 +14,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test backend/invite_core.test.mjs
+      - run: node --test backend/invite_core.test.mjs frontend/student-flow-preview.test.mjs
