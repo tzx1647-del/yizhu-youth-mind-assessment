@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>青少年心智应用测评｜单向答题流程技术预览（模拟）</title>
+<style>
+body{font-family:Arial,"Microsoft YaHei",sans-serif;max-width:800px;margin:28px auto;padding:0 18px;line-height:1.7;color:#222}
+.hidden{display:none}
+.panel{border:1px solid #ddd;border-radius:14px;padding:22px}
+.meta{font-size:14px;color:#666} .stem{font-size:18px;font-weight:700;margin:12px 0}
+.node-title{font-weight:600;margin-top:14px}
+.option{display:block;border:1px solid #ccc;border-radius:10px;padding:11px;margin:8px 0;cursor:pointer}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+button{font-size:16px;padding:10px 16px;border:1px solid #999;border-radius:9px;background:#fff;cursor:pointer}
+:root{--accent:#287cac;--bg:#f5f9fb} body{background:var(--bg)}.panel{background:#fff} .actions button{flex:1;min-height:48px}#nextBtn{background:var(--accent);color:white;border-color:var(--accent)}button:disabled{opacity:.45}
+.map{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0} .level{border:1px solid #ccc;border-radius:8px;padding:6px 9px}
+.active{font-weight:700;border-width:2px} .result-section{margin:18px 0} table{border-collapse:collapse;width:100%}
+th,td{border:1px solid #ddd;padding:7px;text-align:left} .note{font-size:14px;color:#555}
+</style>
+</head>
+<body>
+<div style="padding:9px 15px;background:#fff0cb;border-radius:9px;margin-bottom:12px;font-size:14px"><strong>模拟开发预览</strong>：尚未连接邀请、服务器计分或存档。不得输入真实学生信息；完成仅在本页展示模拟结果。</div>
+<section id="intro" class="panel">
+<p><strong>青少年心智应用测评｜A卷 v0.3.2b</strong></p>
+<p><strong>这不是考试，也没有标准答案。</strong></p>
+<p><strong>请尽量按照你最近三个月多数时候的真实状态来回答。</strong></p>
+<p><strong>如果你没有遇到过完全一样的事情，可以想想类似情况，选择最接近你通常反应的一项。</strong></p>
+<p><strong>如果某一题不理解、无法判断或不知道怎样选择，可以点击“跳过此题”，直接进入下一题。</strong></p>
+<p><strong>有些情境会连续问两三个小问题，请每个小问题都分别作答。</strong></p>
+<button id="startBtn" type="button">开始测评</button>
+</section>
+
+<section id="test" class="panel hidden">
+<div class="meta" id="progressText"></div>
+<div class="stem" id="qStem"></div>
+<div id="nodes"></div>
+<div class="actions">
+<button id="skipBtn" type="button">跳过此题</button>
+<button id="nextBtn" type="button">下一题</button>
+</div>
+</section>
+
+<section id="result" class="panel hidden">
+<div id="resultBody"></div>
+</section>
+
+<script>
+(function(){
+const QUESTIONS=[{"id": "Q01", "stem": "班里一位同学很受欢迎，大家都说“他人特别好”。如果问你怎么看他，你更可能怎样判断？", "nodes": [{"node_id": "Q01-1", "prompt": "", "options": {"A": "大家都觉得好，他应该就是很好的人。", "B": "我和他关系不错，所以我也觉得他挺好。", "C": "想想他具体怎样做事、怎样对待别人，再判断自己是否认可他。", "D": "一个人好不好，相处舒服最重要。"}}]}, {"id": "Q02", "stem": "你很期待周末和朋友出去，但朋友临时因家里的事取消了。哪一种更接近你？", "nodes": [{"node_id": "Q02-1", "prompt": "", "options": {"A": "我会很不舒服，一直想着为什么突然变了，很难做别的事。", "B": "我会告诉自己“没什么”，尽量不想，但心里还是不舒服。", "C": "我会失望，也知道自己不舒服，过一会儿通常能重新安排时间。", "D": "我会先问原因；只要理由能理解，我一般就不会有情绪。"}}]}, {"id": "Q03", "stem": "你自己报名参加一个持续几周的活动，开始后发现比想象中麻烦、很花时间。你更可能怎样？", "nodes": [{"node_id": "Q03-1", "prompt": "", "options": {"A": "早知道这么麻烦就不报名了，现在不想继续也正常。", "B": "这是我自己选的，先看看答应了什么、需要承担什么，再决定怎么办。", "C": "既然报名了，无论怎样都必须坚持到底。", "D": "只要家长或老师同意退出，就没什么问题。"}}]}, {"id": "Q04", "stem": "小组展示时，你想多举例帮助理解；同学想少举例、多讲结论以节省时间。你更可能怎样想？", "nodes": [{"node_id": "Q04-1", "prompt": "", "options": {"A": "多举例更容易听懂，我会说服他。", "B": "两种都可以，互相尊重就好。", "C": "我们关注的东西不同，所以会形成不同判断。", "D": "看老师喜欢哪种方式，按要求做。"}}]}, {"id": "Q05", "stem": "你正在专心做一件自己的事情，家里人过来想和你聊一会儿。你知道对方最近可能比较想和你说说话，但你现在确实不想停下来。你更可能怎样？", "nodes": [{"node_id": "Q05-1", "prompt": "", "options": {"A": "先陪对方聊，自己的事情晚一点再说。", "B": "告诉对方自己现在不方便，也说清楚大概什么时候可以再聊。", "C": "继续做自己的事情，等对方自己发现我现在不想聊。", "D": "有点为难，可能一边做自己的事，一边勉强回应几句。"}}]}, {"id": "Q06", "stem": "你和同学说好一起走，收拾好出来时发现他们已经先走了。你第一反应是“他们根本没想等我”。后来你知道，他们以为你今天不来了。这时候，你更可能怎样想？", "nodes": [{"node_id": "Q06-1", "prompt": "", "options": {"A": "虽然他们这样解释，我还是觉得他们当时就是没想等我。", "B": "看来我刚才的想法不一定就是实际情况，我当时并不知道他们为什么先走。", "C": "既然是误会，那就算了，没必要再想这件事。", "D": "我会告诉自己以后遇到这种事不要乱想，免得自己不开心。"}}]}, {"id": "Q07", "stem": "小组作业快完成时，有人提议把几乎没参与的小杰名字也写上，其他人都同意。你更可能怎样？", "nodes": [{"node_id": "Q07-1", "prompt": "", "options": {"A": "大家都同意，我一般也不会反对。", "B": "先想清楚自己的看法；如果实际参与很重要，我会说明理由再和大家商量。", "C": "老师有规定就按规定处理。", "D": "会同意，没必要因为一次作业伤关系。"}}]}, {"id": "Q08", "stem": "你自己决定用一种新方法准备重要展示，结果很好。结束后你更可能怎样？", "nodes": [{"node_id": "Q08-1", "prompt": "", "options": {"A": "结果好，说明这次选择是对的，下次继续这样。", "B": "会开心，也会想哪些是自己的选择起作用，哪些可能只是这次情况合适。", "C": "主要还是因为自己准备认真。", "D": "结果已经很好，没必要再分析过程。"}}]}, {"id": "Q09", "stem": "群里有人说了一句关于你的话，你觉得被误解，一下很生气，很想马上回复。", "nodes": [{"node_id": "Q09-1", "prompt": "节点1｜你会怎样理解自己的生气？", "options": {"A": "主要因为他说话太直接。", "B": "知道自己生气了，过去后一般不再想。", "C": "想想真正触发自己的是语气、被否定，还是觉得没被认真听。", "D": "提醒自己别人有不同意见很正常，不必生气。"}}, {"node_id": "Q09-2", "prompt": "节点2｜很想马上回复时，你更可能：", "options": {"A": "马上回复，不然憋着更难受。", "B": "先写下来但不发，等没那么冲动再看要不要这样回复。", "C": "忍住不回，时间久了自然会过去。", "D": "提醒自己别生气，别人怎么说没那么重要。"}}]}, {"id": "Q10", "stem": "你答应晚上整理材料发给同学，第二天才发现自己忘了。你更可能怎样？", "nodes": [{"node_id": "Q10-1", "prompt": "", "options": {"A": "很自责，觉得自己连这点事都做不好。", "B": "先道歉，再想为什么忘了：没记、安排太满，还是没把它放在重要位置。", "C": "赶紧补好，只要没继续影响大家就行。", "D": "我有责任，但事情多，偶尔忘一次也正常。"}}]}, {"id": "Q11", "stem": "你看中一样自己很喜欢的东西，也了解了一些相关信息，觉得比较适合自己。家里人看过后却说：“我觉得这个不太值得。”你更可能怎样？", "nodes": [{"node_id": "Q11-1", "prompt": "", "options": {"A": "家里人经验比我多，我会更愿意按他们的判断选。", "B": "我已经了解过了，还是相信自己原来的选择。", "C": "我会再看看其他人怎么评价，多数人觉得好再决定。", "D": "我会听听家里人的理由，也回头看看自己原来为什么这样选，再决定。"}}]}, {"id": "Q12", "stem": "体育课两人练习。你想多练几次，同伴却说很累，想慢一点。你更可能怎样？", "nodes": [{"node_id": "Q12-1", "prompt": "", "options": {"A": "练习就该认真完成，累一点很正常。", "B": "同意少练些，同学之间应该互相照顾。", "C": "先问问他的情况，再商量接下来怎么练。", "D": "他不想练，我就自己练。"}}]}, {"id": "Q13", "stem": "周末你原本有一件自己想做的事。家里人提醒你，下周还有一项比较重要的任务要完成。你想过以后，还是决定先做自己想做的事。后来时间比预想中紧，剩下的任务做得有些匆忙。这时候，你更可能怎样想？", "nodes": [{"node_id": "Q13-1", "prompt": "", "options": {"A": "早知道会这么赶，当时就应该听家里人的。", "B": "这是我自己决定的，时间没安排好也是我要面对的。下次我会早点把任务安排好。", "C": "虽然最后有点赶，但事情也完成了，所以这个选择其实没什么问题。", "D": "这是我自己作的决定。我会想想当时为什么这样选、实际结果和原来预想的有什么不同，下次再作类似选择时可以注意什么。"}}]}, {"id": "Q14", "stem": "好朋友想看你已经完成的个人作业，说“只是参考，我们这么熟，你不会不给看吧？”你更可能怎样？", "nodes": [{"node_id": "Q14-1", "prompt": "", "options": {"A": "给他看，不想让他觉得我不信任他。", "B": "直接拒绝，自己的作业不能给别人看。", "C": "先了解他卡在哪里；不直接给作业，也可以讨论思路或帮他看自己的内容。", "D": "老师没明确禁止的话，给他看看也没什么。"}}]}, {"id": "Q15", "stem": "最近几次在家里，家里人提醒你一些没做好的事情时，你发现自己常常很快就会不高兴，有时还会马上解释。事情过去以后，你更可能怎么想？", "nodes": [{"node_id": "Q15-1", "prompt": "", "options": {"A": "我会把最近几次放在一起想，看看为什么一被提醒，自己就容易不高兴或马上解释。", "B": "我会想这一次为什么不高兴，看看是哪句话让我不舒服。", "C": "我可能会提醒自己以后别这么敏感，别那么容易不高兴。", "D": "事情已经过去了，也没必要再想那么多。"}}]}, {"id": "Q16", "stem": "家里人一直觉得，有一件需要长期投入的事情很适合你，也很希望你继续往这个方向发展。经过一段时间了解和尝试，你却不确定这是不是适合自己的。你更可能怎样？", "nodes": [{"node_id": "Q16-1", "prompt": "", "options": {"A": "家里人比我有经验，他们一直看好这个方向，我会更愿意继续。", "B": "我有自己的想法，但他们一直劝时，我还是会怀疑是不是自己想错了。", "C": "我会听他们为什么这样想，也继续了解和尝试，再按自己逐渐形成的认识作决定。", "D": "既然是我的事情，主要按自己的想法就行，不需要太在意他们怎么看。"}}]}, {"id": "Q17", "stem": "你考虑参加机器人社团。参加中的同学说“有意思”，退出过的同学说“很累”，老师说“适合喜欢动手且愿意持续投入的人”。你也看过活动内容。你更可能怎样判断？", "nodes": [{"node_id": "Q17-1", "prompt": "", "options": {"A": "更相信正在参加的人，他最了解现在的情况。", "B": "把优缺点列出来，哪边更多就按哪边决定。", "C": "想想这些说法各自来自什么经历，再结合自己的情况判断。", "D": "最后还是看自己喜不喜欢，别人的意见只是参考。"}}]}, {"id": "Q18", "stem": "你完成的小组任务被同学指出“和前面接不上，需要修改”。你第一反应是“我已经很认真了，为什么还要改？”过一会儿，你更可能怎样？", "nodes": [{"node_id": "Q18-1", "prompt": "", "options": {"A": "看具体怎么改，确实更好就修改。", "B": "想想自己为什么一听“要改”就不舒服，也看看自己有没有没考虑到的地方。", "C": "提醒自己小组合作就要听取意见。", "D": "大家都觉得要改，我就改。"}}]}, {"id": "Q19", "stem": "你有一件自己很想做的事情，也认真想过怎么安排。家里人不同意；你解释了一会儿，他们还是觉得不合适，你发现自己越来越不高兴。你更可能怎样？", "nodes": [{"node_id": "Q19-1", "prompt": "", "options": {"A": "我会继续解释，越说越着急，希望他们赶快明白我的想法。", "B": "我会先少说一点，让自己别在情绪很强的时候继续争下去。", "C": "我会先答应他们，免得大家继续不高兴，自己的情绪以后再说。", "D": "我会先让自己缓一缓，稳定一些后再看看他们为什么不同意，这件事还能怎么谈。"}}]}, {"id": "Q20", "stem": "好朋友告诉你一件私事并让你保密。后来你发现，如果一直没人知道，可能会给另一个同学带来较大影响。", "nodes": [{"node_id": "Q20-1", "prompt": "节点1｜你首先会怎样考虑？", "options": {"A": "答应保密，就应该守住承诺。", "B": "可能影响别人，就应该马上告诉大人。", "C": "先判断影响，再想这件事里什么更需要优先。", "D": "尽量找一个谁都不会生气的办法。"}}, {"node_id": "Q20-2", "prompt": "假设你最后决定让一个合适的大人知道，因此朋友很生气，甚至一段时间不理你。\n\n节点2｜这时你更可能怎样？", "options": {"A": "早知道这样就不应该说。", "B": "既然已经决定，就不用再想朋友的反应。", "C": "会重新检查自己的决定；如果仍认为有必要，就面对由此带来的后果。", "D": "想办法让朋友尽快原谅自己。"}}]}, {"id": "Q21", "stem": "你原来觉得小林不适合负责重要任务，后来知道他以前做过类似任务，而且完成得不错。你更可能怎样？", "nodes": [{"node_id": "Q21-1", "prompt": "", "options": {"A": "之前不知道这些情况，原来的判断没什么需要再想。", "B": "说明我判断错了，这次直接交给小林。", "C": "看看自己之前为什么觉得他不适合，再结合新信息重新判断。", "D": "问问其他同学，大家觉得谁合适就选谁。"}}]}, {"id": "Q22", "stem": "你看到一条关于自己的消息，很不舒服，也很想马上回复。", "nodes": [{"node_id": "Q22-1", "prompt": "节点1｜这时你更可能：", "options": {"A": "很快回复，把自己的想法说清楚。", "B": "知道情绪起来了，但还是容易顺着感觉做。", "C": "发现情绪已经起来，先不马上决定。", "D": "先不回复，希望事情自己过去。"}}, {"node_id": "Q22-2", "prompt": "节点2｜过一会儿你更可能：", "options": {"A": "继续不碰，希望慢慢过去。", "B": "稳定一些后，再看看事情到底怎么回事。", "C": "等自己完全没情绪再处理。", "D": "看事情大小，有时处理，有时算了。"}}, {"node_id": "Q22-3", "prompt": "节点3｜重新面对时你更可能：", "options": {"A": "情绪过去了，事情也差不多过去了。", "B": "再看发生了什么、自己在意什么，再决定怎样回应。", "C": "尽量表现平静，不让别人觉得自己情绪化。", "D": "主要想怎样回复才不会继续冲突。"}}]}, {"id": "Q23", "stem": "你和同学早就约好周末一起参加一个活动，你也答应了会去。前一天，家里临时有事需要大家一起处理，希望你留下来帮忙。两边对你都很重要。你更可能怎样？", "nodes": [{"node_id": "Q23-1", "prompt": "", "options": {"A": "家里的事突然出现，我会留下来帮忙，再和同学解释。", "B": "我会先弄清家里到底需要我做什么，再看看原来的约定能不能一起安排。", "C": "我已经答应同学了，会尽量按原来的安排，不轻易改变。", "D": "我会看哪一边更不好拒绝，再决定留在哪一边。"}}]}, {"id": "Q24", "stem": "回想最近三个月：有没有几件事情表面不同，但你的反应有些相似？如果有，你更接近哪一种？", "nodes": [{"node_id": "Q24-1", "prompt": "", "options": {"A": "偶尔觉得“我怎么又这样了”，但没特别比较。", "B": "会把几次事情放在一起，看看什么情况下自己容易出现相似反应。", "C": "每件事原因不同，放在一起比较意义不大。", "D": "我大概知道自己是什么性格，所以不意外。"}}]}, {"id": "Q25", "stem": "你一直觉得一位同学做事拖拉。后来发现他以前几次没按时完成各有原因，而这次提前准备、完成得很好。你更可能怎样？", "nodes": [{"node_id": "Q25-1", "prompt": "", "options": {"A": "以前的表现在那里，不会因这一次改变看法。", "B": "这次不错，但以前的判断不一定有问题。", "C": "重新看看以前的事情，也许自己把几次表现变成了对他的固定判断。", "D": "检查原来的判断是怎样形成的，再结合过去和现在的信息，看哪些还成立、哪些要调整。"}}]}, {"id": "Q26", "stem": "活动只剩一个名额。小安一直认真准备，大家原先约定投入多的人优先；小凯最近家里有事，很希望参加。你参与决定名额给谁。", "nodes": [{"node_id": "Q26-1", "prompt": "", "options": {"A": "给小凯，他现在更需要这个机会。", "B": "给小安，既然有约定就应按规则。", "C": "想清楚“遵守约定”和“照顾特殊需要”在这件事里哪个更应优先。", "D": "让大家投票，这样最公平。"}}]}, {"id": "Q27", "stem": "回想最近三个月一件对你比较重要、需要认真作决定的事。可以和学习、朋友、家庭、兴趣或未来安排有关。", "nodes": [{"node_id": "Q27-1", "prompt": "节点1｜再想想最近其他重要决定，你更接近哪一种？", "options": {"A": "没特别注意自己为什么这样选。", "B": "每件事主要看当时情况。", "C": "好像有一些反复出现的依据。", "D": "能说出比较稳定的依据，并想到不同事情中的例子。"}}, {"node_id": "Q27-2", "prompt": "节点2｜在重要决定中，别人给你的意见通常怎样影响你？", "options": {"A": "重要的人意见很明确时，我通常会跟着调整。", "B": "我会听，但最后主要还是看当时哪种做法更合适。", "C": "我会把别人的理由和自己的想法放在一起，再作决定。", "D": "我会听取意见，但也知道自己最终依据什么作决定。"}}, {"node_id": "Q27-3", "prompt": "节点3｜回看几次重要选择，你更接近哪一种？", "options": {"A": "没特别想过有没有共同的选择方式。", "B": "每次情况不同，很难放在一起看。", "C": "好像能发现一些相似的选择方式。", "D": "能发现自己常用的选择方式，也会检查它是否仍适合。"}}]}, {"id": "Q28", "stem": "最近三个月，如果你发现自己在不同事情里会反复出现相似反应，你更接近哪一种？", "nodes": [{"node_id": "Q28-1", "prompt": "节点1", "options": {"A": "发现过，但事情过去也就过去了。", "B": "会提醒自己“下次注意”，但不确定后来有没有改变。", "C": "再遇到类似事情时，有时会注意到“这个反应又来了”，并尝试换一种处理方式。", "D": "会继续观察它什么时候出现、尝试调整；如果没作用，还会再改。"}}, {"node_id": "Q28-2", "prompt": "节点2｜你能想到最近三个月一个真实例子吗？", "options": {"A": "能清楚想到。", "B": "好像有，但想不具体。", "C": "最近没有发现类似情况。", "D": "不确定。"}}]}];
+const SCORING={"Q01-1": {"ability": "价值认知", "transition": "新星→潜力", "scores": {"A": 0, "B": 1, "C": 3, "D": 1}, "role": "直接计分"}, "Q02-1": {"ability": "情绪觉察与调节", "transition": "新星→潜力", "scores": {"A": 0, "B": 1, "C": 3, "D": 1}, "role": "直接计分"}, "Q03-1": {"ability": "选择与承责", "transition": "新星→潜力", "scores": {"A": 0, "B": 3, "C": 2, "D": 0}, "role": "直接计分"}, "Q04-1": {"ability": "独立认知", "transition": "新星→潜力", "scores": {"A": 1, "B": 1, "C": 3, "D": 0}, "role": "直接计分"}, "Q05-1": {"ability": "相处与自处", "transition": "潜力→铜牌", "scores": {"A": 1, "B": 3, "C": 1, "D": 1}, "role": "直接计分"}, "Q06-1": {"ability": "自我觉察与省察", "transition": "新星→潜力", "scores": {"A": 0, "B": 3, "C": 1, "D": 1}, "role": "直接计分"}, "Q07-1": {"ability": "价值认知", "transition": "潜力→铜牌", "scores": {"A": 0, "B": 3, "C": 1, "D": 0}, "role": "直接计分"}, "Q08-1": {"ability": "选择与承责", "transition": "潜力→铜牌", "scores": {"A": 1, "B": 3, "C": 1, "D": 0}, "role": "直接计分"}, "Q09-1": {"ability": "情绪觉察与调节", "transition": "潜力→铜牌", "scores": {"A": 1, "B": 1, "C": 3, "D": 1}, "role": "直接计分"}, "Q09-2": {"ability": "情绪觉察与调节", "transition": "潜力→铜牌", "scores": {"A": 0, "B": 3, "C": 1, "D": 1}, "role": "直接计分"}, "Q10-1": {"ability": "自我觉察与省察", "transition": "潜力→铜牌", "scores": {"A": 0, "B": 3, "C": 1, "D": 1}, "role": "直接计分"}, "Q11-1": {"ability": "独立认知", "transition": "潜力→铜牌", "scores": {"A": 0, "B": 2, "C": 1, "D": 3}, "role": "直接计分"}, "Q12-1": {"ability": "相处与自处", "transition": "新星→潜力", "scores": {"A": 1, "B": 2, "C": 3, "D": 1}, "role": "直接计分"}, "Q13-1": {"ability": "选择与承责", "transition": "潜力→铜牌", "scores": {"A": 1, "B": 2, "C": 0, "D": 3}, "role": "直接计分"}, "Q14-1": {"ability": "相处与自处", "transition": "潜力→铜牌", "scores": {"A": 0, "B": 2, "C": 3, "D": 0}, "role": "直接计分"}, "Q15-1": {"ability": "自我觉察与省察", "transition": "铜牌→银牌", "scores": {"A": 3, "B": 1, "C": 1, "D": 0}, "role": "直接计分"}, "Q16-1": {"ability": "相处与自处", "transition": "银牌→金牌", "scores": {"A": 0, "B": 1, "C": 3, "D": 2}, "role": "直接计分"}, "Q17-1": {"ability": "独立认知", "transition": "铜牌→银牌", "scores": {"A": 0, "B": 1, "C": 3, "D": 1}, "role": "直接计分"}, "Q18-1": {"ability": "自我觉察与省察", "transition": "潜力→铜牌", "scores": {"A": 1, "B": 3, "C": 1, "D": 0}, "role": "直接计分"}, "Q19-1": {"ability": "情绪觉察与调节", "transition": "铜牌→银牌", "scores": {"A": 0, "B": 2, "C": 1, "D": 3}, "role": "直接计分"}, "Q20-1": {"ability": "价值认知", "transition": "铜牌→银牌", "scores": {"A": 1, "B": 1, "C": 3, "D": 1}, "role": "直接计分"}, "Q20-2": {"ability": "选择与承责", "transition": "铜牌→银牌", "scores": {"A": 0, "B": 1, "C": 3, "D": 1}, "role": "直接计分"}, "Q21-1": {"ability": "独立认知", "transition": "潜力→铜牌", "scores": {"A": 1, "B": 2, "C": 3, "D": 0}, "role": "直接计分"}, "Q22-1": {"ability": "情绪觉察与调节", "transition": "银牌→金牌", "scores": {"A": 0, "B": 1, "C": 3, "D": 1}, "role": "直接计分"}, "Q22-2": {"ability": "情绪觉察与调节", "transition": "银牌→金牌", "scores": {"A": 0, "B": 3, "C": 1, "D": 1}, "role": "直接计分"}, "Q22-3": {"ability": "情绪觉察与调节", "transition": "银牌→金牌", "scores": {"A": 1, "B": 3, "C": 1, "D": 1}, "role": "直接计分"}, "Q23-1": {"ability": "相处与自处", "transition": "铜牌→银牌", "scores": {"A": 1, "B": 3, "C": 2, "D": 0}, "role": "直接计分"}, "Q24-1": {"ability": "自我觉察与省察", "transition": "铜牌→银牌", "scores": {"A": 2, "B": 3, "C": 0, "D": 1}, "role": "直接计分"}, "Q25-1": {"ability": "独立认知", "transition": "银牌→金牌", "scores": {"A": 0, "B": 1, "C": 2, "D": 3}, "role": "直接计分"}, "Q26-1": {"ability": "价值认知", "transition": "铜牌→银牌", "scores": {"A": 1, "B": 1, "C": 3, "D": 0}, "role": "直接计分"}, "Q27-1": {"ability": "价值认知", "transition": "银牌→金牌", "scores": {"A": 0, "B": 1, "C": 2, "D": 3}, "role": "直接计分"}, "Q27-2": {"ability": "价值认知＋选择与承责", "transition": "银牌→金牌", "scores": {"A": 0, "B": 1, "C": 2, "D": 3}, "role": "直接计分"}, "Q27-3": {"ability": "选择与承责", "transition": "银牌→金牌", "scores": {"A": 0, "B": 1, "C": 2, "D": 3}, "role": "直接计分"}, "Q28-1": {"ability": "自我觉察与省察", "transition": "银牌→金牌", "scores": {"A": 0, "B": 1, "C": 2, "D": 3}, "role": "直接计分"}, "Q28-2": {"ability": "自我觉察与省察", "transition": "银牌→金牌", "scores": {"A": null, "B": null, "C": null, "D": null}, "role": "验证节点（不直接计分）"}};
+const levelOrder = ["新星级","潜力级","铜牌级","银牌级","金牌级"];
+
+const levelText = {
+ "新星级":"你现在更多是在学习“看见自己”。事情发生时，你可能比较容易跟着当时的感觉、别人的说法或眼前情况作出反应。接下来可以慢慢发现：我为什么会这样想、这样生气、这样选择？当你越来越能看见这些，你就在往下一个成长位置走。",
+ "潜力级":"你已经开始注意自己的想法和反应，也会有自己的判断。接下来可以多问自己一步：我为什么这样想？这是我真正的选择，还是只是跟着当时的感觉或别人走？这些能力越常用，就会越来越稳。",
+ "铜牌级":"你已经会在不少事情里主动想一想、调一调，也愿意为自己的选择负责。接下来可以把这些能力带到更复杂的情况里：有压力、有分歧、两边都重要时，仍然能看清楚再作决定。",
+ "银牌级":"遇到比较复杂的事情时，你已经比较能同时看到自己、别人、事实和责任。接下来可以让这种状态变得更稳定：不只是偶尔做得到，而是在不同事情里都越来越知道自己依据什么判断和选择。",
+ "金牌级":"你已经比较能从自己的内在依据出发，同时愿意听取不同信息、检查自己、调整自己。金牌级也不是成长的终点；新的经历仍会带来新的问题，你还可以继续认识自己、修正自己，让心智不断成长。"
+};
+const abilityText = {
+ "自我觉察与省察":"你比较能够回看自己的反应，并从经历中发现值得调整的地方。",
+ "情绪觉察与调节":"你比较能够注意自己的情绪，并尝试让自己回到可以继续处理事情的状态。",
+ "独立认知":"你比较愿意检查自己的判断依据，而不是只跟随一种声音。",
+ "相处与自处":"你比较能够在关系中看到别人，也保留自己的位置和边界。",
+ "选择与承责":"你比较能够把自己的选择、结果和责任联系起来。",
+ "价值认知":"你比较能够思考自己真正认可什么，并用它帮助自己判断。"
+};
+const growthText = {
+ "自我觉察与省察":"多留意那些反复出现的反应：发生了什么、自己为什么会这样、下一次有没有新的选择。",
+ "情绪觉察与调节":"情绪起来时先看见它，给自己一点停顿，再回到事实和真正需要处理的事情。",
+ "独立认知":"形成观点以后，再问自己一次：我的依据是什么？还有没有我没看到的信息或角度？",
+ "相处与自处":"遇到关系中的分歧时，既看看对方的需要，也练习清楚表达自己的判断和边界。",
+ "选择与承责":"作出选择后，不只看结果好不好，也回看自己当时依据什么、承担了什么、下次会怎样选。",
+ "价值认知":"遇到两个都重要的东西发生冲突时，练习说清楚自己更看重什么，以及为什么。"
+};
+
+let idx=0;
+let answers={};
+let startedAt=null;
+
+const intro=document.getElementById("intro");
+const test=document.getElementById("test");
+const result=document.getElementById("result");
+const progressText=document.getElementById("progressText");
+const qStem=document.getElementById("qStem");
+const nodes=document.getElementById("nodes");
+const skipBtn=document.getElementById("skipBtn");
+const nextBtn=document.getElementById("nextBtn");
+const resultBody=document.getElementById("resultBody");
+
+function startTest(){
+ startedAt=Date.now();
+ intro.style.display="none";
+ test.style.display="block";
+ renderQ();
+}
+
+function renderQ(){
+ const q=QUESTIONS[idx];
+ progressText.textContent=(idx+1)+" / "+QUESTIONS.length;
+ qStem.textContent=q.stem;
+ nodes.innerHTML="";
+ q.nodes.forEach(function(node,ni){
+  const d=document.createElement("div");
+  if(q.nodes.length>1){
+   const t=document.createElement("div");
+   t.className="node-title";
+   t.textContent=node.prompt || ("小问题 "+(ni+1));
+   d.appendChild(t);
+  }
+  Object.keys(node.options).forEach(function(letter){
+   const lab=document.createElement("label"); lab.className="option";
+   const inp=document.createElement("input");
+   inp.type="radio"; inp.name=node.node_id; inp.value=letter;
+   inp.checked=answers[node.node_id]===letter;
+   inp.addEventListener("change",function(){answers[node.node_id]=letter;});
+   lab.appendChild(inp);
+   lab.appendChild(document.createTextNode(" "+letter+". "+node.options[letter]));
+   d.appendChild(lab);
+  });
+  nodes.appendChild(d);
+ });
+ nextBtn.textContent=idx===QUESTIONS.length-1?"完成测评":"下一题";
+ skipBtn.textContent="跳过此题";
+}
+
+function calc(){
+ const layerMax={NP:18,PC:33,CS:24,SG:27};
+ const layer={NP:0,PC:0,CS:0,SG:0};
+ const ability={};
+ Object.keys(SCORING).forEach(function(nodeId){
+  const meta=SCORING[nodeId];
+  if(meta.role.indexOf("验证")>=0) return;
+  const a=answers[nodeId] || null;
+  const raw=(a && meta.scores[a]!==undefined && meta.scores[a]!==null)?meta.scores[a]:0;
+  const sc=Number(raw);
+  let L=meta.transition.indexOf("新星")>=0?"NP":meta.transition.indexOf("潜力")>=0?"PC":meta.transition.indexOf("铜牌")>=0?"CS":"SG";
+  layer[L]+=sc;
+  meta.ability.split("＋").forEach(function(ab){
+   if(!ability[ab]) ability[ab]={score:0,max:0};
+   ability[ab].score+=sc; ability[ab].max+=3;
+  });
+ });
+ const rate={};
+ Object.keys(layer).forEach(function(k){rate[k]=layer[k]/layerMax[k];});
+
+ const sgSupport={"自我觉察与省察":false,"独立认知":false,"相处与自处":false,"选择与承责":false,"价值认知":false};
+ Object.keys(SCORING).forEach(function(nodeId){
+  const meta=SCORING[nodeId];
+  if(meta.transition.indexOf("银牌")<0 || meta.role.indexOf("验证")>=0) return;
+  const choice=answers[nodeId];
+  const sc=choice && meta.scores[choice]!==null && meta.scores[choice]!==undefined ? Number(meta.scores[choice]) : 0;
+  meta.ability.split("＋").forEach(function(ab){
+   if(ab!=="情绪觉察与调节" && sc>=2) sgSupport[ab]=true;
+  });
+ });
+ const erNodes=["Q22-1","Q22-2","Q22-3"];
+ let erCount=0;
+ erNodes.forEach(function(n){
+  const choice=answers[n];
+  if(choice && SCORING[n].scores[choice]!==null && Number(SCORING[n].scores[choice])>=2) erCount++;
+ });
+ sgSupport["情绪觉察与调节"]=erCount>=2;
+ let sgCount=0; Object.keys(sgSupport).forEach(function(k){if(sgSupport[k]) sgCount++;});
+ const sgPass=sgCount>=4;
+
+ let level="新星级";
+ if(rate.NP>=0.6) level="潜力级";
+ if(rate.NP>=0.6&&rate.PC>=0.6) level="铜牌级";
+ if(rate.NP>=0.6&&rate.PC>=0.6&&rate.CS>=0.6) level="银牌级";
+ if(rate.NP>=0.6&&rate.PC>=0.6&&rate.CS>=0.6&&rate.SG>=0.6&&sgPass) level="金牌级";
+
+ const boundary=[],order=["NP","PC","CS","SG"];
+ for(let i=0;i<order.length-1;i++){
+  const L=order[i];
+  let later=false;
+  for(let j=i+1;j<order.length;j++) if(rate[order[j]]>=0.6) later=true;
+  if(rate[L]>=0.5&&rate[L]<0.6&&later) boundary.push(L);
+ }
+ return {layer:layer,rate:rate,ability:ability,level:level,sgCount:sgCount,sgPass:sgPass,boundary:boundary};
+}
+
+function finish(){
+ const r=calc();
+ test.style.display="none";
+ result.style.display="block";
+ const ranked=Object.keys(r.ability).map(function(k){return [k,r.ability[k]];})
+  .filter(function(x){return x[1].max>0;})
+  .sort(function(a,b){return (b[1].score/b[1].max)-(a[1].score/a[1].max);});
+ const strength=ranked.length?ranked[0][0]:"自我觉察与省察";
+ const growth=ranked.length?ranked[ranked.length-1][0]:"选择与承责";
+ let map="";
+ levelOrder.forEach(function(x){map+='<span class="level '+(x===r.level?'active':'')+'">'+x+'</span>';});
+ const elapsed=startedAt===null?null:Math.round((Date.now()-startedAt)/60000);
+ let unanswered=0;
+ Object.keys(SCORING).forEach(function(k){if(SCORING[k].role.indexOf("验证")<0&&!answers[k]) unanswered++;});
+
+ let rows="";
+ ["NP","PC","CS","SG"].forEach(function(k){
+  const max={NP:18,PC:33,CS:24,SG:27}[k];
+  rows+="<tr><td>"+k+"</td><td>"+r.layer[k]+"</td><td>"+max+"</td><td>"+(r.rate[k]*100).toFixed(1)+"%</td></tr>";
+ });
+
+ resultBody.innerHTML=
+ '<div class="result-section"><h3>心智成长为什么重要？</h3><p>心智成长和你每天怎么想事情、怎么面对情绪、怎么和别人相处、怎么作选择都有关系。成长不是让自己变成“标准答案”，而是越来越认识自己，遇到事情时越来越知道自己为什么这样想、可以怎样选择，也愿意为自己的选择负责。</p></div>'+
+ '<div class="result-section"><h3>① 五级成长地图</h3><div class="map">'+map+'</div><p><strong>五级不是五种好坏评价，而是五个不同的成长位置。每一个位置，都有已经拥有的能力，也都有继续成长的空间。</strong></p></div>'+
+ '<div class="result-section"><h3>② 我的当前位置</h3><p>根据你最近三个月不同生活情境中的回答，你目前整体心智表现更接近 <strong>'+r.level+'</strong>。</p><p>这里没有“好”或“不好”。这个位置说明你现在更常从哪里开始理解事情和作出选择，也提示你接下来还有哪些地方可以继续成长。</p></div>'+
+ '<div class="result-section"><h3>③ 我现在是什么样</h3><p>'+levelText[r.level]+'</p></div>'+
+ '<div class="result-section"><h3>④ 我的优势</h3><p>'+abilityText[strength]+'</p></div>'+
+ '<div class="result-section"><h3>⑤ 当前最值得发展的地方</h3><p>'+growthText[growth]+'</p></div>'+
+ '<div class="result-section"><h3>⑥ 下一步成长建议</h3><p>接下来不需要一下改变很多。可以从最近真实发生的一件事开始：回想自己当时怎么看、怎么反应、为什么这样选择，以及下一次有没有一种更适合自己的处理方式。</p></div>'+
+ '<p class="note">这个结果用于帮助你看见最近三个月较稳定的心智状态，不是在给你贴标签。人的状态会随着经历、选择和实践继续变化。</p>';
+}
+
+document.getElementById("startBtn").addEventListener("click",startTest);
+function advance(){if(idx<QUESTIONS.length-1){idx++;renderQ();}else finish();}
+skipBtn.addEventListener("click",function(){QUESTIONS[idx].nodes.forEach(function(n){delete answers[n.node_id];});advance();});
+nextBtn.addEventListener("click",function(){
+ const missing=QUESTIONS[idx].nodes.some(function(n){return !answers[n.node_id];});
+ if(missing){window.alert("请完成当前题目的选择；如果无法判断，可以点击“跳过此题”。");return;}
+ advance();
+});
+})();
+</script>
+</body></html>
