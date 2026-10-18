@@ -48,6 +48,11 @@ Deno.serve(async(req)=>{
    return respond(503,{error:'Submission unavailable'});
   }
   const id=await r.json();
-  return respond(201,{status:'completed',submission_id:id,student_result:{level:calculated.level}});
+  const ranked=Object.entries(calculated.ability)
+    .filter(([,v])=>v.max>0)
+    .sort((a,b)=>(b[1].score/b[1].max)-(a[1].score/a[1].max));
+  const strength=ranked.length?ranked[0][0]:'自我觉察与省察';
+  const growth=ranked.length?ranked[ranked.length-1][0]:'选择与承责';
+  return respond(201,{status:'completed',student_result:{level:calculated.level,strength,growth}});
  }catch{return respond(503,{error:'Backend unavailable'});}
 });
