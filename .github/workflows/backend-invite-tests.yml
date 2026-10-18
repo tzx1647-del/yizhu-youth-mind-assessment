@@ -14,4 +14,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test backend/invite_core.test.mjs frontend/student-flow-preview.test.mjs backend/edge/assessment-demo/score.test.mjs frontend/online-demo-preview.test.mjs
+      - run: node --test backend/invite_core.test.mjs frontend/student-flow-preview.test.mjs backend/edge/assessment-demo/score.test.mjs frontend/online-demo-preview.test.mjs frontend/admin-dashboard-preview.test.mjs
