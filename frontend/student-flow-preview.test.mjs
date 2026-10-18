@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 const baseline = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const preview = readFileSync(new URL('../frontend/student-flow-preview.html', import.meta.url), 'utf8');
 function dataSource(html, name) {
- const match = html.match(new RegExp('const ' + name + '=(\\\\[[^\\\\n]+\\\\]|\\\\{[^\\\\n]+\\\\});'));
+ const line = html.split('\n').find(line => line.startsWith('const ' + name + '='));
+ const match = line && line.endsWith(';') ? [line, line.slice(('const ' + name + '=').length, -1)] : null;
  assert.ok(match, 'Missing ' + name);
  return match[1];
 }
