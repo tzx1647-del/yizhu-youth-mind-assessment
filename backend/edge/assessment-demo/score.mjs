@@ -60,7 +60,7 @@ export function scoreDemoAnswers(answers){
  if(!answers || typeof answers!=='object'||Array.isArray(answers)) throw Error('Invalid answers');
  if(Object.keys(answers).length>35)throw Error('Too many answers');
  for(const [id,value] of Object.entries(answers)){
-  if(!SCORING[id] || !(value in SCORING[id].scores) || typeof value !=='string')throw Error('Invalid node or option');
+  if(!SCORING[id] || typeof value !=='string' || !/^[A-E]$/.test(value) || !Object.prototype.hasOwnProperty.call(SCORING[id].scores,value))throw Error('Invalid node or option');
  }
  return {form_code:'A',form_version:FORM_VERSION,...calculate(answers)};
 }
