@@ -1,0 +1,63 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title>意竹管理后台 · 开发环境</title>
+<style>
+:root{font-family:Arial,"Microsoft YaHei",sans-serif;color:#24394b;background:#f3f7fa}*{box-sizing:border-box}body{margin:0}main{max-width:880px;margin:25px auto;padding:16px}header{margin-bottom:18px}.card{background:#fff;border:1px solid #d9e4ed;border-radius:16px;padding:24px;margin-bottom:16px;box-shadow:0 2px 12px #20384908}h1{font-size:24px;margin:0 0 8px}h2{font-size:19px}p{line-height:1.65}.muted{color:#617485;font-size:14px}label{display:block;margin:12px 0 6px;font-weight:bold}input{width:100%;padding:12px;border-radius:9px;border:1px solid #aebdcc;font-size:16px}button{border:0;border-radius:10px;background:#246d9b;color:#fff;padding:11px 18px;font-size:15px;cursor:pointer}button:disabled{opacity:.5;cursor:wait}.secondary{background:#e8f1f6;color:#235575}.error{color:#a32927}.ok{color:#15705f}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:420px;overflow:auto;background:#f5f8fa;padding:14px;border-radius:8px}table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:10px;border-bottom:1px solid #dee8ee;text-align:left;overflow-wrap:anywhere}table button{padding:6px 10px}#workspace{display:none}.notice{background:#fff2cf;padding:12px;border-radius:9px;font-size:14px}.tablewrap{overflow-x:auto}
+</style></head><body><main><header><h1>意竹 · 测评管理后台</h1><p class="muted">仅供开发联调 · Supabase 模拟数据库 · 不接收真实学生资料</p></header>
+<div class="notice">这是开发测试后台。必须先建立 Supabase 登录用户并授权管理员角色，其他人无法查看答卷。请勿上传真实儿童个人信息。</div>
+<section class="card" id="login"><h2>管理员登录</h2><form id="loginForm"><label for="email">邮箱</label><input id="email" type="email" autocomplete="username" required><label for="password">密码</label><input id="password" type="password" autocomplete="current-password" required><p><button type="submit">登录后台</button></p></form><p class="muted">管理员账户由系统所有者在 Supabase 控制台创建。这里不提供公开注册。</p></section>
+<section id="workspace"><div class="card"><button class="secondary" id="logout">退出登录</button> <button id="refresh">刷新数据</button><p class="ok" id="who"></p></div>
+<section class="card"><h2>邀请列表</h2><div class="tablewrap"><table><thead><tr><th>邀请编号</th><th>学生年龄</th><th>状态</th><th>版本</th><th>学生别名</th></tr></thead><tbody id="invitations"></tbody></table></div></section>
+<section class="card"><h2>测评提交</h2><div class="tablewrap"><table><thead><tr><th>提交时间</th><th>层级</th><th>版本</th><th>类型</th><th>详情</th></tr></thead><tbody id="submissions"></tbody></table></div></section>
+<section class="card"><h2>答卷详情（仅管理员）</h2><pre id="detail">请选择“查看”。</pre></section></section>
+<section class="card" aria-live="polite"><p id="status" class="muted">请使用已授权的 Supabase 账户登录。</p></section></main>
+<script>
+(()=>{"use strict";
+ const base="https://imeuogjoxjfkiwpirpop.supabase.co";
+ const publishable="sb_publishable_Z0vPyKzCuWzMnBtCY3ZzPg_YK_lQZLf";
+ const endpoint=base+"/functions/v1/admin-read";
+ let accessToken="";
+ const get=id=>document.getElementById(id);
+ const status=(message,isError=false)=>{get("status").textContent=message;get("status").className=isError?"error":"muted";};
+ async function jsonFetch(url,options={}){
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
+  try{const res=await fetch(url,{...options,signal:controller.signal,cache:"no-store"});let data=await res.json().catch(()=>({}));return{res,data};}
+  finally{clearTimeout(timer);}
+ }
+ function cell(row,value){const td=document.createElement("td");td.textContent=value==null?"—":String(value);row.appendChild(td);}
+ function reset(){accessToken="";get("password").value="";get("login").style.display="block";get("workspace").style.display="none";get("who").textContent="";}
+ async function adminGet(path){
+  if(!accessToken)throw Error("请重新登录");
+  const {res,data}=await jsonFetch(endpoint+"/"+path,{headers:{"apikey":publishable,"Authorization":"Bearer "+accessToken}});
+  if(!res.ok)throw Error(res.status===401||res.status===403?"当前账户尚未取得管理员访问权限":(data.error||"读取失败"));
+  return data;
+ }
+ async function refresh(){
+  status("正在读取模拟数据……");
+  const [i,s]=await Promise.all([adminGet("invitations"),adminGet("submissions")]);
+  get("invitations").replaceChildren();get("submissions").replaceChildren();
+  for(const item of i.items||[]){const tr=document.createElement("tr");for(const field of ["invitation_code","student_age","invitation_status","assessment_version","student_display_name"])cell(tr,item[field]);get("invitations").append(tr);}
+  for(const item of s.items||[]){
+   const tr=document.createElement("tr");
+   for(const field of ["submitted_at","level","form_version","is_simulation"])cell(tr,item[field]);
+   const td=document.createElement("td"),btn=document.createElement("button");btn.textContent="查看";btn.className="secondary";
+   btn.addEventListener("click",async()=>{try{const d=await adminGet("submissions/"+item.id);get("detail").textContent=JSON.stringify(d.item,null,2);status("已打开答卷详情");}catch(e){status(e.message,true);}});
+   td.append(btn);tr.append(td);get("submissions").append(tr);
+  }
+  status("已读取模拟数据：邀请 "+(i.items||[]).length+" 条；答卷 "+(s.items||[]).length+" 份。");
+ }
+ get("loginForm").addEventListener("submit",async event=>{
+  event.preventDefault();status("正在验证管理员身份……");
+  const email=get("email").value.trim(),password=get("password").value;
+  try{
+   const {res,data}=await jsonFetch(base+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"apikey":publishable,"Content-Type":"application/json"},body:JSON.stringify({email,password})});
+   get("password").value="";
+   if(!res.ok||!data.access_token)throw Error("登录失败。请检查账号密码及邮箱验证状态。");
+   accessToken=data.access_token;
+   await adminGet("me");
+   get("login").style.display="none";get("workspace").style.display="block";get("who").textContent="管理员身份已通过验证";
+   await refresh();
+  }catch(e){reset();status(e.message||"无法登录",true);}
+ });
+ get("logout").addEventListener("click",()=>{reset();status("已退出登录");});
+ get("refresh").addEventListener("click",()=>refresh().catch(e=>status(e.message,true)));
+})();
+</script></body></html>
