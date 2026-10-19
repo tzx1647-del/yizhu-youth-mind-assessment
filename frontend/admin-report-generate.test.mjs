@@ -12,9 +12,12 @@ test('generated sections are nonblank personalized drafts for same submission',(
  const result=generateSuggestedSections(sub,inv);
  assert.deepEqual(Object.keys(result.sections),['02','03','04','05']);
  assert.ok(result.sections['02'].includes('铜牌级'));
- assert.ok(result.sections['03'].includes('61.1%'));
+ assert.ok(result.sections['03'].includes('铜牌级'));
+ assert.doesNotMatch(Object.values(result.sections).join(' '),/61\.1%|60\.6%|节点|计分证据|得分率|18分|33分/);
  assert.ok(result.sections['04'].includes('情境'));
  assert.ok(result.sections['05'].includes('家长'));
+ assert.equal(result.generation_method,'scenario_evidence_parent_readable_v2');
+ assert.ok(result.notice.includes('不是实际生活经历'));
  assert.ok(result.notice.includes('审核'));
 });
 test('generator rejects non-demo, mismatched or unknown-level inputs',()=>{
@@ -31,4 +34,19 @@ test('existing edits are not overwritten when merely asking for suggestions',()=
  assert.ok(page.includes('window.confirm('));
  assert.ok(page.includes('按钮生成或读取待审核家长报告草稿'));
  assert.ok(!page.includes('const SCORING='));
+});
+
+test('two real answer contexts are used for an ability when cross-scenario evidence supports it',()=>{
+ const x={...sub,answers:{'Q03-1':'B','Q10-1':'A','Q13-1':'C','Q23-1':'A','Q01-1':'B','Q17-1':'C'}};
+ const result=generateSuggestedSections(x,inv);
+ assert.ok(result.sections['04'].includes('测评设定的'));
+ assert.ok(result.sections['04'].includes('孩子选择了接近'));
+ assert.ok(result.sections['04'].includes('并非已核实发生过的生活事件'));
+ assert.ok(result.sections['05'].includes('例如'));
+});
+test('one answered scenario cannot justify a confident individual ability conclusion',()=>{
+ const x={...sub,answers:{'Q01-1':'B'}};
+ const result=generateSuggestedSections(x,inv);
+ assert.ok(result.sections['04'].includes('不足以形成可靠'));
+ assert.ok(result.sections['05'].includes('先邀请孩子讲讲'));
 });
