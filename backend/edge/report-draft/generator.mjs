@@ -1,70 +1,133 @@
-// Rule-based draft wording, grounded in cross-scenario scored evidence.
-// All generated text is unapproved and must be reviewed by administrator.
+// Family-facing simulated report draft: scenarios and selected responses, not scoring diagnostics.
+// Every output remains unapproved. Scores select themes internally; no invented personal history.
 import {SCORING} from './evidence.mjs';
-const names=['新星级','潜力级','铜牌级','银牌级','金牌级'];
-const orderedAbilities=['自我觉察与省察','情绪觉察与调节','独立认知','相处与自处','选择与承责','价值认知'];
-const focus={
- '自我觉察与省察':'陪伴孩子回看最近经历：当时注意到了什么、为什么那样反应，以及下次可以怎样调整。',
- '情绪觉察与调节':'遇到情绪起伏时，可以先帮助孩子说清自己的感受，再一起商量怎样处理眼前的事。',
- '独立认知':'鼓励孩子说出判断依据，并练习寻找能够支持或修正判断的新信息。',
- '相处与自处':'讨论同伴关系中的分歧，让孩子练习理解别人，同时表达自己的需要与边界。',
- '选择与承责':'让孩子参与适当的自主选择，再一起回顾选择、结果和承担的责任。',
- '价值认知':'当两种重要需求发生冲突时，邀请孩子说清楚自己更看重什么、为什么。'
+import {QUESTIONS} from './questions.mjs';
+const LEVELS=['新星级','潜力级','铜牌级','银牌级','金牌级'];
+const ABILITIES=['自我觉察与省察','情绪觉察与调节','独立认知','相处与自处','选择与承责','价值认知'];
+const CONTEXT={
+ Q01:'评价一位受同学欢迎的人',Q02:'朋友临时取消周末约定',
+ Q03:'自己报名的活动比想象中费时',Q04:'小组展示时与同学意见不同',
+ Q05:'家人希望聊天、自己还想继续手头的事',Q06:'以为同学故意先走，后来发现是误会',
+ Q07:'同学想给没有参与任务的人署名',Q08:'自己调整准备方法后取得不错结果',
+ Q09:'在同学群里被误解、很想立刻回复',Q10:'答应给同学发材料却忘记了',
+ Q11:'自己看中的东西被家人质疑',Q12:'体育课同伴希望放慢练习',
+ Q13:'自己的周末安排与重要任务发生冲突',Q14:'好朋友想参考已完成的个人作业',
+ Q15:'家人提醒事情时容易马上不高兴',Q16:'家人期待的长期方向与自己意愿不完全一致',
+ Q17:'听到不同的人对机器人社团的意见',Q18:'认真完成的小组任务被要求修改',
+ Q19:'家人不同意自己的安排，情绪越来越强烈',
+ Q20:'保护好友秘密与避免他人受到伤害之间出现冲突',
+ Q21:'得到新信息后重新评价原先不看好的同学',
+ Q22:'看到关于自己的消息很不舒服',Q23:'已答应朋友的活动与家里的临时需要冲突',
+ Q24:'回看近期不同事情中相似的反应',Q25:'同学表现与自己过去的印象不同',
+ Q26:'活动名额分配涉及公平与他人的困难',Q27:'回看近期一次重要的自主决定',
+ Q28:'发现自己在不同事件中反复出现相似反应'
 };
+const PRACTICE={
+ '自我觉察与省察':{
+  scene:'例如，孩子在被提醒、被误解或事后回想时，家长可以先问：“刚才你最在意的是什么？后来有没有发现另一种可能？”',
+  action:'先听孩子说完，再邀请他比较当时的反应与事后的想法，不急着评价对错。'
+ },
+ '情绪觉察与调节':{
+  scene:'例如，当周末安排临时改变、同学在群里说了让人不舒服的话时，家长可以问：“你当时最强烈的感觉是什么？你想怎样处理？”',
+  action:'一起商量一个短暂停顿的方法，再讨论怎样回应。重点不是压住情绪，而是情绪出现后仍能选择行动。'
+ },
+ '独立认知':{
+  scene:'例如，孩子说“大家都觉得某个人不好”时，可以问：“你自己看到了什么？你是怎样作出这个判断的？”',
+  action:'陪孩子把“别人说的”“自己看到的”“目前还不知道的”分开，再允许他形成自己的看法。'
+ },
+ '相处与自处':{
+  scene:'例如，孩子想继续手头的事，而家人希望马上聊一会儿时，可以一起商量怎样表达现在的需要，同时照顾对方的感受。',
+  action:'先邀请孩子说出自己的边界，再练习一句具体而尊重的表达，例如“我还需要十分钟，之后我们再聊”。'
+ },
+ '选择与承责':{
+  scene:'例如，孩子自己报了活动，后来发现比想象中花时间时，可以一起回顾当初为什么报名、答应过什么、现在有哪些可行选择。',
+  action:'家长先不替孩子决定是否坚持，而是让他讲清每种选择可能带来的结果，练习为自己的决定负责。'
+ },
+ '价值认知':{
+  scene:'例如，一位朋友希望你帮忙，但这样可能影响另一位同学时，家长可以和孩子讨论：“友情、公平与责任都重要时，怎么决定更合适？”',
+  action:'帮助孩子把自己重视的原则说清楚，也认真考虑这些原则应用到现实情境时可能产生的后果。'
+ }
+};
+const LEVEL_COPY={
+ '新星级':'孩子目前更多在学习留意自己的感受、判断和反应，成长空间在于逐渐看见“我为什么会这样想”。',
+ '潜力级':'孩子已经开始注意自己的想法和选择，接下来可以练习把这种思考更稳定地带入不同生活情境。',
+ '铜牌级':'孩子在一些情境中已经会主动思考、调整，并开始将选择与后果联系起来；面对更复杂的压力和分歧时，仍有继续练习的空间。',
+ '银牌级':'孩子在较复杂的选择中逐渐能兼顾自己的想法、他人的处境和责任；接下来值得关注的是这种表现能否保持稳定。',
+ '金牌级':'孩子在多个情境中展现出较成熟的判断与自我修正线索；这仍是成长过程中的阶段位置，不是终点。'
+};
+function safeText(s){return String(s||'').replace(/\s+/g,' ').trim();}
+function scenarioLines(ability,records){
+ const items=records.filter(x=>x.abilities.includes(ability));
+ const selected=[],seen=new Set();
+ for(const x of items){
+  if(seen.has(x.questionId))continue;
+  seen.add(x.questionId);
+  selected.push(x);
+  if(selected.length===2)break;
+ }
+ return selected.map((x)=>{
+  const context=CONTEXT[x.questionId]||safeText(x.stem);
+  const answer=safeText(x.option);
+  return '例如，在测评设定的“'+context+'”情境中，孩子选择了接近“'+answer+'”的处理方式。这只是他在该情境题中的选择，可以和日常生活中相似的经历对照看看。';
+ });
+}
 export function generateSuggestedSections(submission,invitation){
- if(!submission||!invitation||submission.invitation_id!==invitation.id ||
-    submission.is_simulation!==true||!String(invitation.invitation_code||'').startsWith('DEMO-') ||
+ if(!submission||!invitation||submission.invitation_id!==invitation.id||
+    submission.is_simulation!==true||!String(invitation.invitation_code||'').startsWith('DEMO-')||
     submission.form_code!=='A'||submission.form_version!=='v0.3.2b')throw Error('Unsupported simulation assessment');
  const r=submission.scoring_result||{},level=r.level;
- if(!names.includes(level))throw Error('Unsupported level');
+ if(!LEVELS.includes(level))throw Error('Unsupported level');
  const answers=submission.answers||{};
- const grouping=new Map(orderedAbilities.map(a=>[a,{scenarios:new Set(),count:0,total:0,earned:0}]));
- for(const [nodeId,meta] of Object.entries(SCORING)){
-  if(meta.role.includes('验证')||!Object.prototype.hasOwnProperty.call(answers,nodeId))continue;
-  const opt=answers[nodeId],score=meta.scores[opt];
-  if(typeof score!=='number')continue;
-  for(const name of meta.ability.split('＋')){
-   const entry=grouping.get(name);if(!entry)continue;
-   entry.scenarios.add(nodeId.split('-')[0]);
-   entry.count++;entry.total+=3;entry.earned+=score;
+ const records=[];
+ for(const q of QUESTIONS){
+  for(const n of q.nodes){
+   const meta=SCORING[n.node_id],choice=answers[n.node_id];
+   if(!meta||meta.role.includes('验证')||typeof choice!=='string'||
+      !Object.prototype.hasOwnProperty.call(n.options,choice)||
+      typeof meta.scores[choice]!=='number')continue;
+   records.push({questionId:q.id,nodeId:n.node_id,stem:q.stem,option:n.options[choice],
+    score:meta.scores[choice],abilities:meta.ability.split('＋')});
   }
  }
- const evidence=orderedAbilities.map(name=>({...grouping.get(name),name,scenario_count:grouping.get(name).scenarios.size}))
-  .filter(x=>x.scenario_count>=2&&x.count>=2)
-  .sort((a,b)=>(b.earned/b.total)-(a.earned/a.total));
- const highest=evidence[0],lowest=evidence[evidence.length-1];
- const summary=x=>x?x.name+'（本次共涉及'+x.scenario_count+'个不同情境、'+x.count+'个计分节点，证据得分'+x.earned+'/'+x.total+'）':'目前没有足够跨情境节点形成该项概括';
- const cautions='这些只是本次生活情境回答所提供的线索，不等于孩子在所有场合都如此；单一答案不能独立证明一项心智能力。';
- const count=Object.keys(answers).filter(id=>Object.prototype.hasOwnProperty.call(SCORING,id)).length;
+ const evidence=ABILITIES.map(name=>{
+  const values=records.filter(x=>x.abilities.includes(name));
+  return {name,records:values,scenarios:new Set(values.map(x=>x.questionId)).size,
+   ratio:values.length?values.reduce((sum,x)=>sum+x.score,0)/(values.length*3):null};
+ }).filter(x=>x.scenarios>=2&&x.records.length>=2)
+   .sort((a,b)=>b.ratio-a.ratio);
+ const strongest=evidence[0]||null;
+ const developing=evidence.length>=2?evidence[evidence.length-1]:null;
+ const focusNames=[strongest?.name,developing?.name].filter(Boolean);
+ const observation=focusNames.map((ability,i)=>{
+  const examples=scenarioLines(ability,records);
+  const qualifier=i===0?'在这份答卷中，'+ability+'方面出现了一些值得肯定的选择线索。':
+     '与此同时，'+ability+'是一个可以在日常生活里继续观察、练习的方向。';
+  return ['【'+(i===0?'值得肯定的成长线索':'下一步值得关注的地方')+'｜'+ability+'】',
+    qualifier,...examples,
+    '这些是测评中的情境选择，并非已核实发生过的生活事件，也不能说明孩子在每种情况下都会这样做。'].join('\n\n');
+ });
+ const advice=focusNames.map((ability,i)=>['【'+(i===0?'巩固已有的表现':'尝试新的成长练习')+'｜'+ability+'】',
+   PRACTICE[ability].scene,PRACTICE[ability].action,
+   '可以先选择一件孩子愿意谈论的真实小事，试一周后再一起回顾，不必要求立刻达到某个标准。'].join('\n\n'));
  const sections={
- '02':[
-  '本次测评结果：孩子整体心智表现更接近'+level+'。五级成长地图：新星级 → 潜力级 → 铜牌级 → 银牌级 → 金牌级。',
-  '本次共有'+count+'个响应节点提供了作答信息（测评总计35个响应节点，其中含1个验证节点）。',
-  highest?'在这份答卷中，相对较有支持的能力证据出现在'+summary(highest)+'。':'本次跨情境证据尚不足以形成明确的相对优势概括。',
-  lowest?'另一个值得继续观察的方向是'+summary(lowest)+'。':'对于其他能力，需要结合更多生活实例继续观察。',
-  cautions
- ].join('\n\n'),
- '03':[
-  '当前测评位置：'+level+'（五级成长地图中的第'+(names.indexOf(level)+1)+'级）。',
-  '此结果来自固定A卷v0.3.2b的整体跃迁计分及跨能力证据规则，不是依据某道题单独判断。层级是当前成长位置的参考，不代表孩子的好坏或个人价值。',
-  '四段跃迁的得分率分别为：新星→潜力 '+((Number(r.rate?.NP)||0)*100).toFixed(1)+'%；潜力→铜牌 '+((Number(r.rate?.PC)||0)*100).toFixed(1)+'%；铜牌→银牌 '+((Number(r.rate?.CS)||0)*100).toFixed(1)+'%；银牌→金牌 '+((Number(r.rate?.SG)||0)*100).toFixed(1)+'%。系统按顺序跃迁，不允许跳级。',
-  '上述比例用于内部核查和草稿审核；正式家长报告是否展示数值，须经意竹确认。'
- ].join('\n\n'),
- '04':[
-  '成长观察一｜'+(highest?highest.name:'继续观察孩子的多情境表现'),
-  highest?'本次在'+highest.scenario_count+'个不同情境中的相关回答，为观察'+highest.name+'提供了一组相对较强的计分证据。可和孩子讨论这些选择背后的真实想法，并观察是否在日常生活中也有所体现。':'现有可用证据不足以形成这项跨情境判断。',
-  '成长观察二｜'+(lowest?lowest.name:'需要补充生活实例的能力'),
-  lowest?'本次在'+lowest.scenario_count+'个不同情境中的相关证据相对较弱，建议结合孩子的真实经历进一步理解，不能仅凭得分推断能力缺失。':'可先从近期实际发生的生活情境继续观察。',
-  cautions
- ].join('\n\n'),
- '05':[
-  '下一阶段可以从近期的一件真实小事开始，不要求孩子立即改变很多。',
-  highest?'对于目前已有相对支持的'+highest.name+'，家长可以邀请孩子分享自己当时的思考和做法，帮助这些表现在不同情境中逐渐稳定。':'先鼓励孩子说出自己的真实想法和选择依据。',
-  lowest?'对于值得继续发展的'+lowest.name+'，可尝试：'+focus[lowest.name]:'选择一项家长与孩子都愿意尝试的小练习。',
-  '建议以对话和生活实践为主，不把测评层级作为要求孩子达到某种标准的标签；后续建议需由意竹根据具体证据审核。'
- ].join('\n\n')
+  '02':['从本次测评的不同生活情境回答来看，孩子目前整体心智表现更接近'+level+'。',
+    LEVEL_COPY[level],
+    strongest?'一个值得肯定的方向是'+strongest.name+'；这份答卷还提示，可以继续关注'+(developing?.name||'其他情境中的表现')+'。':
+     '当前跨情境证据不足以突出某一项能力，建议结合日常经历进一步了解。',
+    '这是一份帮助家长理解孩子的成长参考，而不是给孩子贴标签。'].join('\n\n'),
+  '03':['孩子当前更接近'+level+'，这是五级心智成长地图中的一个位置。',
+    LEVEL_COPY[level],
+    '同一个孩子，在熟悉的情境和遇到压力、分歧时，表现也可能不同。因此比起要求孩子达到某个层级，更值得留意他面对实际事情时怎样判断、表达和承担。',
+    '测评结果不与年龄直接对应，也不代表孩子的个人价值。'].join('\n\n'),
+  '04':observation.length?observation.join('\n\n'):
+    '现有跨情境选择尚不足以形成可靠的具体能力观察。建议先与孩子回顾两三件最近真实发生的小事，了解他当时怎么看、怎么选择。',
+  '05':advice.length?['不必一下改变很多，家长可以从日常生活里一件小事开始。',...advice,
+    '家长的任务不是替孩子作出“标准选择”，而是帮助他逐渐看清自己的想法、事实和后果。'].join('\n\n'):
+    '可以先邀请孩子讲讲最近遇到的一件小事：“你当时怎么想？还有什么选择？下次会想怎么做？”先从理解开始，不急着给答案。'
  };
  return {sections,level,form_version:submission.form_version,
-  evidence_overview:{strongest:highest?{ability:highest.name,scenarios:highest.scenario_count}:null,development:lowest?{ability:lowest.name,scenarios:lowest.scenario_count}:null},
-  notice:'系统生成的个性化初稿，仅供意竹审核修改，不是已经批准的报告。'};
+   evidence_overview:{strongest:strongest?{ability:strongest.name,scenarios:strongest.scenarios,node_ids:strongest.records.map(x=>x.nodeId)}:null,
+    development:developing?{ability:developing.name,scenarios:developing.scenarios,node_ids:developing.records.map(x=>x.nodeId)}:null},
+   generation_method:'scenario_evidence_parent_readable_v2',
+   notice:'自动初稿仅用于意竹审核；情境描写来自模拟题，不是实际生活经历，未经审核不得发布。'};
 }
