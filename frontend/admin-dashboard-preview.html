@@ -341,7 +341,7 @@ const growthText = {
     const wrapper=make("section",null,"report-section",article);
     make("h2",sec.number+"｜"+sec.title,null,wrapper);
     for(const text of sec.paragraphs||[]){
-     for(const line of String(text).split(/\\n\\n+/)){
+     for(const line of String(text).split(/\n\n+/)){
       if(line.trim())make("p",line.trim(),"para",wrapper);
      }
     }
