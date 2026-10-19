@@ -31,13 +31,40 @@ Deno.serve(async req=>{
  if(!['GET','POST'].includes(req.method))return respond(405,{error:'Method not allowed'},origin);
  if(!base||!service)return respond(503,{error:'Backend unavailable'},origin);
  const path=new URL(req.url).pathname;
- const m=path.match(/\/submissions\/([0-9a-f-]{36})\/draft$/);
+ const m=path.match(/\/submissions\/([0-9a-f-]{36})\/draft(\/edit)?$/);
  if(!m)return respond(404,{error:'Not found'},origin);
- const id=m[1];
+ const id=m[1],editing=Boolean(m[2]);
+ if(editing&&req.method!=='POST')return respond(405,{error:'POST required'},origin);
  try{
   const admin=await authorized(req);
   if(!admin)return respond(403,{error:'Administrator access denied'},origin);
   const found=await api('parent_report_reviews?select=id,submission_id,report_template_version,review_status,draft_json,created_at&submission_id=eq.'+id+'&limit=1');
+  if(editing){
+   if(found.length!==1)return respond(404,{error:'Report draft not found'},origin);
+   if(found[0].review_status!=='needs_review'&&found[0].review_status!=='draft')return respond(409,{error:'Report already locked'},origin);
+   if(Number(req.headers.get('content-length')||0)>60000)return respond(413,{error:'Payload too large'},origin);
+   let body;
+   try{body=await req.json();}catch{return respond(400,{error:'Invalid JSON'},origin);}
+   if(!body||!Number.isInteger(body.expected_revision)||body.expected_revision<0||
+      !body.sections||typeof body.sections!=='object'||Array.isArray(body.sections)||
+      Object.keys(body.sections).sort().join(',')!=='02,03,04,05'||
+      !Object.values(body.sections).every(v=>typeof v==='string'&&v.trim().length>0&&v.length<=12000)){
+      return respond(400,{error:'Only four editable nonempty sections 02-05 are allowed'},origin);
+   }
+   const saved=await fetch(base+'/rest/v1/rpc/save_demo_report_sections',{
+    method:'POST',headers:{...hdr,'Content-Type':'application/json'},
+    body:JSON.stringify({p_report_id:found[0].id,p_expected_revision:body.expected_revision,p_editable_sections:body.sections})
+   });
+   if(!saved.ok){
+    const err=await saved.json().catch(()=>({}));
+    if(err.code==='40001')return respond(409,{error:'版本已变化，请重新打开草稿后再编辑'},origin);
+    if(err.code==='22023')return respond(400,{error:'报告内容格式不正确'},origin);
+    if(err.code==='P0001')return respond(409,{error:'报告不可继续编辑'},origin);
+    return respond(503,{error:'无法保存报告'},origin);
+   }
+   const updated=await saved.json();
+   return respond(200,{item:{...found[0],draft_json:updated,review_status:'needs_review'},saved:true},origin);
+  }
   if(found.length)return respond(200,{item:found[0],reused:true},origin);
   if(req.method==='GET')return respond(404,{error:'No report draft yet'},origin);
   const submissions=await api('assessment_submissions?select=id,invitation_id,form_code,form_version,is_simulation,scoring_result&is_simulation=eq.true&id=eq.'+id+'&limit=1');
