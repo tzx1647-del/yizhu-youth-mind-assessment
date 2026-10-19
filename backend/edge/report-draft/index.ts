@@ -87,7 +87,7 @@ Deno.serve(async req=>{
   const suggested=generateSuggestedSections(source,invitations[0]);
   for(const section of draft.sections){
    if(Object.prototype.hasOwnProperty.call(suggested.sections,section.number)){
-    section.paragraphs=suggested.sections[section.number].split('\\n\\n');
+    section.paragraphs=suggested.sections[section.number].split('\n\n');
     section.editorial_status='pending_approval';
    }
   }
