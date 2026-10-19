@@ -16,7 +16,12 @@ test('generated sections are nonblank personalized drafts for same submission',(
  assert.doesNotMatch(Object.values(result.sections).join(' '),/61\.1%|60\.6%|节点|计分证据|得分率|18分|33分/);
  assert.ok(result.sections['04'].includes('情境'));
  assert.ok(result.sections['05'].includes('家长'));
- assert.equal(result.generation_method,'scenario_evidence_parent_readable_v2');
+ assert.equal(result.generation_method,'stage_progression_parent_readable_v3');
+ assert.equal(result.sections['02'],'本次测评结果：孩子目前整体心智表现更接近铜牌级。');
+ assert.ok(result.sections['03'].includes('【潜力级】'));
+ assert.ok(result.sections['03'].includes('【当前层级：铜牌级】'));
+ assert.ok(result.sections['05'].includes('铜牌级 → 银牌级'));
+ assert.ok(!result.sections['05'].includes('【巩固已有的表现'));
  assert.ok(result.notice.includes('不是实际生活经历'));
  assert.ok(result.notice.includes('审核'));
 });
@@ -49,4 +54,15 @@ test('one answered scenario cannot justify a confident individual ability conclu
  const result=generateSuggestedSections(x,inv);
  assert.ok(result.sections['04'].includes('不足以形成可靠'));
  assert.ok(result.sections['05'].includes('先邀请孩子讲讲'));
+});
+
+test('each level targets only the next growth stage, gold moves toward adult mind growth without conversion',()=>{
+ const targets=[['新星级','潜力级'],['潜力级','铜牌级'],['铜牌级','银牌级'],['银牌级','金牌级'],['金牌级','成人心智成长方向']];
+ for(const [level,next] of targets){
+  const report=generateSuggestedSections({...sub,scoring_result:{level}},inv);
+  assert.ok(report.sections['05'].includes(level+' → '+next));
+  assert.equal(report.sections['02'],'本次测评结果：孩子目前整体心智表现更接近'+level+'。');
+ }
+ const gold=generateSuggestedSections({...sub,scoring_result:{level:'金牌级'}},inv);
+ assert.ok(gold.sections['05'].includes('不把青少年金牌级换算为成人六层级'));
 });
