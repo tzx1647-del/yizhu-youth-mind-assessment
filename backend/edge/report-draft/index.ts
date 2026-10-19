@@ -1,5 +1,6 @@
 // Protected family report draft creation / lookup. Only a real authorized Supabase administrator may call.
 import {makeReportDraft,TEMPLATE_VERSION} from './template.mjs';
+import {generateSuggestedSections} from './generator.mjs';
 const base=Deno.env.get('SUPABASE_URL')||'';
 const service=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'';
 const originAllowed='https://tzx1647-del.github.io';
@@ -31,14 +32,24 @@ Deno.serve(async req=>{
  if(!['GET','POST'].includes(req.method))return respond(405,{error:'Method not allowed'},origin);
  if(!base||!service)return respond(503,{error:'Backend unavailable'},origin);
  const path=new URL(req.url).pathname;
- const m=path.match(/\/submissions\/([0-9a-f-]{36})\/draft(\/edit)?$/);
+ const m=path.match(/\/submissions\/([0-9a-f-]{36})\/draft(\/edit|\/suggest)?$/);
  if(!m)return respond(404,{error:'Not found'},origin);
- const id=m[1],editing=Boolean(m[2]);
+ const id=m[1],editing=m[2]==='/edit',suggesting=m[2]==='/suggest';
+ if(suggesting&&req.method!=='POST')return respond(405,{error:'POST required'},origin);
  if(editing&&req.method!=='POST')return respond(405,{error:'POST required'},origin);
  try{
   const admin=await authorized(req);
   if(!admin)return respond(403,{error:'Administrator access denied'},origin);
   const found=await api('parent_report_reviews?select=id,submission_id,report_template_version,review_status,draft_json,created_at&submission_id=eq.'+id+'&limit=1');
+  if(suggesting){
+   const submissions=await api('assessment_submissions?select=id,invitation_id,form_code,form_version,is_simulation,answers,scoring_result&is_simulation=eq.true&id=eq.'+id+'&limit=1');
+   if(submissions.length!==1)return respond(404,{error:'Simulation submission not found'},origin);
+   const source=submissions[0];
+   const invitations=await api('invitation_records?select=id,invitation_code,student_age,student_display_name&id=eq.'+source.invitation_id+'&limit=1');
+   if(invitations.length!==1)return respond(404,{error:'Invitation not found'},origin);
+   const suggestion=generateSuggestedSections(source,invitations[0]);
+   return respond(200,{suggestion,stored:false,requires_review:true},origin);
+  }
   if(editing){
    if(found.length!==1)return respond(404,{error:'Report draft not found'},origin);
    if(found[0].review_status!=='needs_review'&&found[0].review_status!=='draft')return respond(409,{error:'Report already locked'},origin);
@@ -73,6 +84,15 @@ Deno.serve(async req=>{
   const invitations=await api('invitation_records?select=id,invitation_code,student_age,student_display_name&id=eq.'+source.invitation_id+'&limit=1');
   if(invitations.length!==1)return respond(404,{error:'Invitation not found'},origin);
   const draft=makeReportDraft(source,invitations[0]);
+  const suggested=generateSuggestedSections(source,invitations[0]);
+  for(const section of draft.sections){
+   if(Object.prototype.hasOwnProperty.call(suggested.sections,section.number)){
+    section.paragraphs=suggested.sections[section.number].split('\\n\\n');
+    section.editorial_status='pending_approval';
+   }
+  }
+  draft.generation_method='rule_based_cross_scenario_v1';
+  draft.status='needs_review';
   const response=await fetch(base+'/rest/v1/parent_report_reviews?on_conflict=submission_id',{method:'POST',
    headers:{...hdr,'Content-Type':'application/json','Prefer':'resolution=ignore-duplicates,return=representation'},
    body:JSON.stringify({submission_id:source.id,report_template_version:TEMPLATE_VERSION,review_status:'needs_review',draft_json:draft})});
