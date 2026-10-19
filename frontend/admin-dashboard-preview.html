@@ -264,12 +264,12 @@ const growthText = {
   return response.data.item;
  }
  async function reviewSection(number){
-  if(reportDirty){status("有尚未保存的修改，请先保存后再审核。",true);return;}
+  if(reportDirty){const message="新版报告文字尚未保存。请先点击“保存02–05草稿”，保存成功后再确认本章。";status(message,true);window.alert(message);const save=get("saveDraft");if(save)save.scrollIntoView({behavior:"smooth",block:"center"});return;}
   try{
    const rev=Number(loadedReportRecord.draft_json?.edit_revision||0);
    renderReportDraft(await sendReview("review",{expected_revision:rev,section:number}));
    status("第"+number+"章已确认。");
-  }catch(e){status(e.message,true);}
+  }catch(e){status(e.message,true);window.alert("章节确认失败："+e.message);}
  }
  async function approveReport(){
   if(reportDirty){status("请先保存所有修改。",true);return;}
