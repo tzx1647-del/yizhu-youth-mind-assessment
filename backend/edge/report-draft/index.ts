@@ -115,7 +115,7 @@ Deno.serve(async req=>{
     section.editorial_status='pending_approval';
    }
   }
-  draft.generation_method='scenario_evidence_parent_readable_v2';
+  draft.generation_method='stage_progression_parent_readable_v3';
   draft.status='needs_review';
   const response=await fetch(base+'/rest/v1/parent_report_reviews?on_conflict=submission_id',{method:'POST',
    headers:{...hdr,'Content-Type':'application/json','Prefer':'resolution=ignore-duplicates,return=representation'},
