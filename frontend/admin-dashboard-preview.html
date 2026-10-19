@@ -224,7 +224,7 @@ const growthText = {
   suggestButton.type="button";suggestButton.className="secondary";
   suggestButton.addEventListener("click",suggestReport);
   if(!locked)area.append(suggestButton);
-  area.append(el("p","自动初稿需要你审核。点击后可选择是否填入编辑框；原有保存内容不会被直接覆盖。","muted"));
+  if(!locked)area.append(el("p","自动初稿需要你审核。点击后可选择是否填入编辑框；原有保存内容不会被直接覆盖。","muted"));
   const controls=el("div",null,"report-controls");
   const button=el("button","保存02–05草稿");button.id="saveDraft";button.type="button";button.disabled=true;
   const notice=el("span","内容未修改","report-dirty");notice.id="draftDirty";
@@ -232,7 +232,12 @@ const growthText = {
   if(!locked){controls.append(button,notice);area.append(controls);
    const approvedButton=el("button","最终批准报告");approvedButton.id="approveReport";approvedButton.disabled=!["02","03","04","05"].every(n=>checks[n]===rev);approvedButton.addEventListener("click",approveReport);area.append(approvedButton);
   }
-  area.append(el("p",locked?"已批准并锁定，正式PDF导出尚待开发。":"01、06固定；02–05须保存后逐章确认，全部确认才能批准。批准后不可再修改。","unanswered"));
+  if(locked){
+   const exportButton=el("button","打开A4排版预览／保存为PDF");
+   exportButton.type="button";exportButton.addEventListener("click",openApprovedPrintPreview);
+   area.append(exportButton);
+  }
+  area.append(el("p",locked?"已批准并锁定；可打开A4阅读版，通过浏览器打印为PDF。请先检查文字和分页。":"01、06固定；02–05须保存后逐章确认，全部确认才能批准。批准后不可再修改。","unanswered"));
  }
  async function suggestReport(){
   if(!selectedSubmissionId||!loadedReportRecord)return;
@@ -254,6 +259,100 @@ const growthText = {
    get("draftDirty").textContent="已填入自动初稿，尚未保存；请先逐章审核、修改";
    status("系统已生成并填入02–05章初稿。必须由你审阅并点击保存。");
   }catch(e){status(e.message||"生成失败",true);}
+ }
+
+ async function openApprovedPrintPreview(){
+  if(!selectedSubmissionId||loadedReportRecord?.review_status!=="approved"){
+   status("只有已批准报告可以导出PDF。",true);return;
+  }
+  const tab=window.open("","_blank");
+  if(!tab){status("浏览器拦截了预览窗口，请允许本网站弹出窗口后重试。",true);return;}
+  tab.document.title="正在核验获批报告";
+  tab.document.body.textContent="正在从服务器验证已批准的报告版本，请稍候……";
+  try{
+   const {res,data}=await jsonFetch(reportEndpoint+"/submissions/"+selectedSubmissionId+"/draft",{
+    method:"POST",headers:{"apikey":publishable,"Authorization":"Bearer "+accessToken,"Content-Type":"application/json"},body:"{}"
+   });
+   const record=data.item,doc=record?.draft_json;
+   if(!res.ok||record?.review_status!=="approved"||doc?.status!=="approved"||
+      !Number.isInteger(Number(doc.approved_revision))||
+      Number(doc.approved_revision)!==Number(doc.edit_revision||0)||
+      !Array.isArray(doc.sections)||doc.sections.length!==6||
+      doc.sections.some((v,i)=>v.number!==String(i+1).padStart(2,"0"))){
+    throw Error("服务器尚未确认这份报告的已批准版本，禁止导出。");
+   }
+   const printDoc=tab.document;
+   printDoc.head.replaceChildren();
+   const meta=printDoc.createElement("meta");meta.setAttribute("charset","utf-8");printDoc.head.append(meta);
+   const viewport=printDoc.createElement("meta");viewport.name="viewport";viewport.content="width=device-width, initial-scale=1";printDoc.head.append(viewport);
+   const title=printDoc.createElement("title");title.textContent="青少年心智成长报告｜"+(doc.subject_alias||"模拟")+"｜已批准";printDoc.head.append(title);
+   const style=printDoc.createElement("style");
+   style.textContent=`
+     @page{size:A4;margin:20mm 20mm 22mm 20mm}
+     *{box-sizing:border-box}
+     html,body{margin:0;padding:0;background:#eef2f4;color:#263a47}
+     body{font-family:"Noto Sans CJK SC","Microsoft YaHei","PingFang SC","Source Han Sans SC",sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+     .toolbar{position:sticky;top:0;z-index:9;padding:15px 20px;background:#233c50;color:white;display:flex;align-items:center;gap:15px;justify-content:center}
+     .toolbar button{background:white;border:0;border-radius:7px;padding:10px 18px;font-size:15px;cursor:pointer;color:#193a55}
+     .toolbar small{font-size:13px;line-height:1.5}
+     article{max-width:210mm;margin:24px auto;padding:22mm 20mm 23mm;background:white;box-shadow:0 7px 28px #182c391d}
+     h1{text-align:center;color:#245c79;font-size:25px;letter-spacing:1.1px;margin:12px 0 18px;font-weight:700}
+     .subtitle{text-align:center;color:#617480;font-size:12px;margin-bottom:30px}
+     .meta{padding:14px 17px;margin:0 0 27px;border-top:2px solid #588d9a;border-bottom:1px solid #dbe7eb;color:#536b77;font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:7px}
+     .report-section{margin:0 0 26px;break-inside:auto}
+     h2{font-size:17px;line-height:1.65;color:#255d74;font-weight:700;border-bottom:1px solid #dbe8ed;padding:0 0 8px;margin:0 0 15px;break-after:avoid;page-break-after:avoid}
+     .para{font-size:13.5px;line-height:1.95;letter-spacing:.15px;text-align:justify;margin:0 0 13px;white-space:pre-wrap;overflow-wrap:anywhere;orphans:3;widows:3}
+     .quote{color:#376f83;border-left:3px solid #80aab5;background:#f4f8f8;padding:12px 16px;margin:19px 0 22px;font-size:13px;line-height:1.8;break-inside:avoid;page-break-inside:avoid}
+     .footer-note{border-top:1px solid #d9e3e8;color:#788995;font-size:10.5px;padding-top:12px;margin-top:28px;line-height:1.8}
+     .demo{font-size:11px;color:#986020;text-align:center;margin-bottom:15px}
+     @media print{
+       html,body{background:#fff}
+       .toolbar{display:none!important}
+       article{margin:0;max-width:none;padding:0;box-shadow:none}
+       .report-section{margin-bottom:25px}
+       h1{margin-top:6px}
+     }
+     @media screen and (max-width:750px){article{margin:0;padding:28px 21px}.meta{grid-template-columns:1fr}}
+   `;
+   printDoc.head.append(style);
+   printDoc.body.replaceChildren();
+   const make=(tag,txt,klass,parent)=>{
+    const node=printDoc.createElement(tag);if(txt!==undefined&&txt!==null)node.textContent=String(txt);
+    if(klass)node.className=klass;(parent||printDoc.body).append(node);return node;
+   };
+   const bar=make("div",null,"toolbar");
+   const btn=make("button","打印／保存为PDF",null,bar);btn.addEventListener("click",()=>tab.print());
+   make("small","Edge 打印目标请选择“另存为 PDF”；纸张 A4，建议关闭浏览器页眉和页脚。",null,bar);
+   const article=make("article");
+   make("h1","青少年心智成长报告",null,article);
+   make("p","家长阅读版 · 已批准报告", "subtitle",article);
+   make("p","开发模拟案例 · 仅供排版测试，不可作为真实学生报告交付","demo",article);
+   const metaBox=make("div",null,"meta",article);
+   make("span","学生／模拟别名："+(doc.subject_alias||"—"),null,metaBox);
+   make("span","心智成长层级："+(doc.assessment_level||"—"),null,metaBox);
+   make("span","报告版本："+(record.report_template_version||"—"),null,metaBox);
+   make("span","审核状态：已批准（第"+doc.approved_revision+"版）",null,metaBox);
+   const quotes={
+    "02":"成绩记录孩子学会了什么，心智成长让我们看见孩子正在成为怎样的人。",
+    "03":"AI时代，心智为王。",
+    "05":"教育不只是让孩子学会知识，更是帮助孩子认识自己。"
+   };
+   for(const sec of doc.sections){
+    const wrapper=make("section",null,"report-section",article);
+    make("h2",sec.number+"｜"+sec.title,null,wrapper);
+    for(const text of sec.paragraphs||[]){
+     for(const line of String(text).split(/\\n\\n+/)){
+      if(line.trim())make("p",line.trim(),"para",wrapper);
+     }
+    }
+    if(quotes[sec.number])make("blockquote",quotes[sec.number],"quote",wrapper);
+   }
+   make("p","本报告依据模拟答卷形成、经管理员审核，仅用于开发测试。测评结果供成长参考，不构成医疗或心理疾病诊断。","footer-note",article);
+   status("已打开获批报告的A4阅读版。请检查分页，再点击“打印／保存为PDF”。");
+  }catch(error){
+   tab.document.body.textContent="无法导出："+(error.message||"未知错误");
+   status(error.message||"PDF预览失败",true);
+  }
  }
  async function sendReview(action,payload){
   const response=await jsonFetch(reportEndpoint+"/submissions/"+selectedSubmissionId+"/draft/"+action,{
