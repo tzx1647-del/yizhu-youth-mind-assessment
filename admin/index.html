@@ -215,12 +215,37 @@ const growthText = {
    }
    area.append(holder);
   }
+  const suggestButton=el("button","依据本次答卷生成02–05章自动初稿");
+  suggestButton.type="button";suggestButton.className="secondary";
+  suggestButton.addEventListener("click",suggestReport);
+  area.append(suggestButton);
+  area.append(el("p","自动初稿需要你审核。点击后可选择是否填入编辑框；原有保存内容不会被直接覆盖。","muted"));
   const controls=el("div",null,"report-controls");
   const button=el("button","保存02–05草稿");button.id="saveDraft";button.type="button";button.disabled=true;
   const notice=el("span","内容未修改","report-dirty");notice.id="draftDirty";
   button.addEventListener("click",saveReportDraft);
   controls.append(button,notice);area.append(controls);
   area.append(el("p","01、06为锁定章节，不提供修改。02–05只保存为待审核内容；正式批准和PDF导出尚未开放。","unanswered"));
+ }
+ async function suggestReport(){
+  if(!selectedSubmissionId||!loadedReportRecord)return;
+  status("正在根据当前答卷的跨情境证据生成02–05章初稿……");
+  try{
+   const {res,data}=await jsonFetch(reportEndpoint+"/submissions/"+selectedSubmissionId+"/draft/suggest",{
+    method:"POST",headers:{"apikey":publishable,"Authorization":"Bearer "+accessToken,"Content-Type":"application/json"},body:"{}"
+   });
+   if(!res.ok||!data.suggestion?.sections)throw Error(data.error||"生成报告建议失败");
+   const sections=data.suggestion.sections;
+   if(!["02","03","04","05"].every(n=>typeof sections[n]==="string"&&sections[n].trim()))throw Error("报告生成不完整");
+   if(!window.confirm("将系统生成的四章初稿填入当前编辑框吗？这会替换编辑框中尚未保存的文字，但不会自动修改云端草稿。")){status("已取消填入；原草稿未修改。");return;}
+   for(const n of ["02","03","04","05"]){
+    const area=get("reportDraft").querySelector('textarea[data-section="'+n+'"]');
+    if(area)area.value=sections[n];
+   }
+   get("saveDraft").disabled=false;
+   get("draftDirty").textContent="已填入自动初稿，尚未保存；请先逐章审核、修改";
+   status("系统已生成并填入02–05章初稿。必须由你审阅并点击保存。");
+  }catch(e){status(e.message||"生成失败",true);}
  }
  async function saveReportDraft(){
   if(!selectedSubmissionId||!loadedReportRecord)return;
