@@ -102,7 +102,7 @@ Deno.serve(async req=>{
   }
   if(found.length)return respond(200,{item:found[0],reused:true},origin);
   if(req.method==='GET')return respond(404,{error:'No report draft yet'},origin);
-  const submissions=await api('assessment_submissions?select=id,invitation_id,form_code,form_version,is_simulation,scoring_result&is_simulation=eq.true&id=eq.'+id+'&limit=1');
+  const submissions=await api('assessment_submissions?select=id,invitation_id,form_code,form_version,is_simulation,answers,scoring_result&is_simulation=eq.true&id=eq.'+id+'&limit=1');
   if(submissions.length!==1)return respond(404,{error:'Simulation submission not found'},origin);
   const source=submissions[0];
   const invitations=await api('invitation_records?select=id,invitation_code,student_age,student_display_name&id=eq.'+source.invitation_id+'&limit=1');
