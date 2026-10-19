@@ -255,6 +255,31 @@ const growthText = {
    status("系统已生成并填入02–05章初稿。必须由你审阅并点击保存。");
   }catch(e){status(e.message||"生成失败",true);}
  }
+ async function sendReview(action,payload){
+  const response=await jsonFetch(reportEndpoint+"/submissions/"+selectedSubmissionId+"/draft/"+action,{
+   method:"POST",headers:{"apikey":publishable,"Authorization":"Bearer "+accessToken,"Content-Type":"application/json"},
+   body:JSON.stringify(payload)
+  });
+  if(!response.res.ok||!response.data.item)throw Error(response.data.error||"审核操作失败");
+  return response.data.item;
+ }
+ async function reviewSection(number){
+  if(reportDirty){status("有尚未保存的修改，请先保存后再审核。",true);return;}
+  try{
+   const rev=Number(loadedReportRecord.draft_json?.edit_revision||0);
+   renderReportDraft(await sendReview("review",{expected_revision:rev,section:number}));
+   status("第"+number+"章已确认。");
+  }catch(e){status(e.message,true);}
+ }
+ async function approveReport(){
+  if(reportDirty){status("请先保存所有修改。",true);return;}
+  if(!window.confirm("四章均已审核？批准后将锁定这份模拟报告，不能再编辑。"))return;
+  try{
+   const rev=Number(loadedReportRecord.draft_json?.edit_revision||0);
+   renderReportDraft(await sendReview("approve",{expected_revision:rev,confirm:true}));
+   status("模拟家长报告已批准并锁定。PDF功能仍未开放。");
+  }catch(e){status(e.message,true);}
+ }
  async function saveReportDraft(){
   if(!selectedSubmissionId||!loadedReportRecord)return;
   const sections={};
