@@ -22,30 +22,33 @@ const CONTEXT={
  Q26:'活动名额分配涉及公平与他人的困难',Q27:'回看近期一次重要的自主决定',
  Q28:'发现自己在不同事件中反复出现相似反应'
 };
-const PRACTICE={
- '自我觉察与省察':{
-  scene:'例如，孩子在被提醒、被误解或事后回想时，家长可以先问：“刚才你最在意的是什么？后来有没有发现另一种可能？”',
-  action:'先听孩子说完，再邀请他比较当时的反应与事后的想法，不急着评价对错。'
+// Next-stage recommendations address the transition, not the abilities described in chapter 04.
+// Gold is directed toward adult mind-growth practice, NOT converted into an adult six-tier score.
+const NEXT_STEP={
+ '新星级':{
+ target:'潜力级',goal:'从跟着眼前感觉反应，走向开始留意自己的想法、情绪与判断。',
+ scene:'例如，孩子因为朋友临时改变约定而生气时，家长可以先问：“你现在最难受的是什么？你觉得对方可能遇到了什么情况？”',
+ action:'先帮助孩子把感受和已经知道的事实分开，再邀请他想一种新的回应方法。'
  },
- '情绪觉察与调节':{
-  scene:'例如，当周末安排临时改变、同学在群里说了让人不舒服的话时，家长可以问：“你当时最强烈的感觉是什么？你想怎样处理？”',
-  action:'一起商量一个短暂停顿的方法，再讨论怎样回应。重点不是压住情绪，而是情绪出现后仍能选择行动。'
+ '潜力级':{
+ target:'铜牌级',goal:'从开始察觉自己的想法，走向能主动调整选择，并逐渐承担选择带来的结果。',
+ scene:'例如，孩子自己答应了一项任务，后来发现时间不够，家长可以问：“你现在有哪些办法？选每种办法，需要承担什么？”',
+ action:'把决定权适当地留给孩子，事后一起回顾他的选择和结果，而不是替他给出标准答案。'
  },
- '独立认知':{
-  scene:'例如，孩子说“大家都觉得某个人不好”时，可以问：“你自己看到了什么？你是怎样作出这个判断的？”',
-  action:'陪孩子把“别人说的”“自己看到的”“目前还不知道的”分开，再允许他形成自己的看法。'
+ '铜牌级':{
+ target:'银牌级',goal:'从能够主动思考和承担，继续练习在压力、分歧、两边都重要的情况下，同时看见事实、他人处境和责任。',
+ scene:'例如，孩子已经答应朋友周末一起活动，但家里临时需要帮忙时，不急着要求他服从某一方，可以问：“双方各需要什么？哪些承诺必须考虑？有没有办法先沟通，再作选择？”',
+ action:'请孩子列出不同选择可能影响的人及后果，练习说明依据、沟通取舍，并为最终选择负责。'
  },
- '相处与自处':{
-  scene:'例如，孩子想继续手头的事，而家人希望马上聊一会儿时，可以一起商量怎样表达现在的需要，同时照顾对方的感受。',
-  action:'先邀请孩子说出自己的边界，再练习一句具体而尊重的表达，例如“我还需要十分钟，之后我们再聊”。'
+ '银牌级':{
+ target:'金牌级',goal:'从复杂情况下能够兼顾多方，继续发展更稳定的内在判断依据、自我检查和自我修正。',
+ scene:'例如，孩子坚持一个自己很有把握的观点，后来出现相反的新信息时，可以问：“什么样的证据会让你愿意重新考虑？”',
+ action:'鼓励孩子既坚持经过思考的判断，也愿意认真听取反证；过些日子再回看，是否在不同事情里都能做到。'
  },
- '选择与承责':{
-  scene:'例如，孩子自己报了活动，后来发现比想象中花时间时，可以一起回顾当初为什么报名、答应过什么、现在有哪些可行选择。',
-  action:'家长先不替孩子决定是否坚持，而是让他讲清每种选择可能带来的结果，练习为自己的决定负责。'
- },
- '价值认知':{
-  scene:'例如，一位朋友希望你帮忙，但这样可能影响另一位同学时，家长可以和孩子讨论：“友情、公平与责任都重要时，怎么决定更合适？”',
-  action:'帮助孩子把自己重视的原则说清楚，也认真考虑这些原则应用到现实情境时可能产生的后果。'
+ '金牌级':{
+ target:'成人心智成长方向',goal:'青少年金牌级不是成长终点。下一步是面向成人生活中更长期、更真实的责任、关系与自主选择，持续发展独立思考、自省和实践能力。',
+ scene:'例如，逐渐讨论未来学习或生活方向时，家长可以问：“这件事和你长期真正重视的目标有什么关系？你准备怎样持续实践，又怎样面对结果？”',
+ action:'让孩子逐步承担与年龄和现实条件相适应的长期计划与责任，定期回看目标、行动、反馈和调整。此处只是成长方向，不把青少年金牌级换算为成人六层级中的任何一级。'
  }
 };
 const LEVEL_COPY={
@@ -106,28 +109,30 @@ export function generateSuggestedSections(submission,invitation){
     qualifier,...examples,
     '这些是测评中的情境选择，并非已核实发生过的生活事件，也不能说明孩子在每种情况下都会这样做。'].join('\n\n');
  });
- const advice=focusNames.map((ability,i)=>['【'+(i===0?'巩固已有的表现':'尝试新的成长练习')+'｜'+ability+'】',
-   PRACTICE[ability].scene,PRACTICE[ability].action,
-   '可以先选择一件孩子愿意谈论的真实小事，试一周后再一起回顾，不必要求立刻达到某个标准。'].join('\n\n'));
+ const destination=NEXT_STEP[level];
+ const previousLevels=LEVELS.slice(0,LEVELS.indexOf(level));
+ const earlier=previousLevels.length?previousLevels.map(x=>'【'+x+'】'+LEVEL_COPY[x]):[];
  const sections={
-  '02':['从本次测评的不同生活情境回答来看，孩子目前整体心智表现更接近'+level+'。',
-    LEVEL_COPY[level],
-    strongest?'一个值得肯定的方向是'+strongest.name+'；这份答卷还提示，可以继续关注'+(developing?.name||'其他情境中的表现')+'。':
-     '当前跨情境证据不足以突出某一项能力，建议结合日常经历进一步了解。',
-    '这是一份帮助家长理解孩子的成长参考，而不是给孩子贴标签。'].join('\n\n'),
-  '03':['孩子当前更接近'+level+'，这是五级心智成长地图中的一个位置。',
-    LEVEL_COPY[level],
-    '同一个孩子，在熟悉的情境和遇到压力、分歧时，表现也可能不同。因此比起要求孩子达到某个层级，更值得留意他面对实际事情时怎样判断、表达和承担。',
-    '测评结果不与年龄直接对应，也不代表孩子的个人价值。'].join('\n\n'),
-  '04':observation.length?observation.join('\n\n'):
+  '02':'本次测评结果：孩子目前整体心智表现更接近'+level+'。',
+  '03':[
+   '孩子目前处在'+level+'。成长是逐渐积累的过程，可以把前面已经走过的层级与当前层级连起来理解。',
+   ...earlier,
+   '【当前层级：'+level+'】'+LEVEL_COPY[level],
+   '这些描述是心智成长位置的参考，不是说孩子在每件事中都已经稳定具备全部特点，也不与年龄或个人价值直接对应。'
+  ].join('\\n\\n'),
+  '04':observation.length?observation.join('\\n\\n'):
     '现有跨情境选择尚不足以形成可靠的具体能力观察。建议先与孩子回顾两三件最近真实发生的小事，了解他当时怎么看、怎么选择。',
-  '05':advice.length?['不必一下改变很多，家长可以从日常生活里一件小事开始。',...advice,
-    '家长的任务不是替孩子作出“标准选择”，而是帮助他逐渐看清自己的想法、事实和后果。'].join('\n\n'):
-    '可以先邀请孩子讲讲最近遇到的一件小事：“你当时怎么想？还有什么选择？下次会想怎么做？”先从理解开始，不急着给答案。'
+  '05':[
+   '【下一阶段成长方向：'+level+' → '+destination.target+'】',
+   destination.goal,
+   '【可以尝试的生活情境】',destination.scene,
+   '【家长可以怎样陪伴】',destination.action,
+   '成长建议是下一阶段的练习方向，不是要求孩子尽快升级，也不能仅凭一次测评认定孩子已经准备好进入下一层级。'
+  ].join('\\n\\n')
  };
  return {sections,level,form_version:submission.form_version,
    evidence_overview:{strongest:strongest?{ability:strongest.name,scenarios:strongest.scenarios,node_ids:strongest.records.map(x=>x.nodeId)}:null,
     development:developing?{ability:developing.name,scenarios:developing.scenarios,node_ids:developing.records.map(x=>x.nodeId)}:null},
-   generation_method:'scenario_evidence_parent_readable_v2',
+   generation_method:'stage_progression_parent_readable_v3',
    notice:'自动初稿仅用于意竹审核；情境描写来自模拟题，不是实际生活经历，未经审核不得发布。'};
 }
