@@ -1,3 +1,4 @@
+import { buildNodeEvidence } from './evidence.mjs';
 // Administrator-only read API. Never accept data-changing requests.
 const urlBase=Deno.env.get("SUPABASE_URL")||"";
 const secret=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
@@ -33,7 +34,9 @@ async function submissionDetail(id){
  const res=await fetch(urlBase+"/rest/v1/assessment_submissions?id=eq."+id+"&select="+encodeURIComponent(select)+"&limit=1",{headers:serverHeaders});
  if(!res.ok)throw new Error("Submission unavailable");
  const values=await res.json();
- return values[0]||null;
+ const record=values[0]||null;
+ if(record)record.node_evidence=buildNodeEvidence(record.answers||{});
+ return record;
 }
 Deno.serve(async req=>{
  const origin=req.headers.get("origin")||"";
