@@ -119,8 +119,8 @@ export function generateSuggestedSections(submission,invitation){
    ...earlier,
    '【当前层级：'+level+'】'+LEVEL_COPY[level],
    '这些描述是心智成长位置的参考，不是说孩子在每件事中都已经稳定具备全部特点，也不与年龄或个人价值直接对应。'
-  ].join('\\n\\n'),
-  '04':observation.length?observation.join('\\n\\n'):
+  ].join('\n\n'),
+  '04':observation.length?observation.join('\n\n'):
     '现有跨情境选择尚不足以形成可靠的具体能力观察。建议先与孩子回顾两三件最近真实发生的小事，了解他当时怎么看、怎么选择。',
   '05':[
    '【下一阶段成长方向：'+level+' → '+destination.target+'】',
@@ -128,7 +128,7 @@ export function generateSuggestedSections(submission,invitation){
    '【可以尝试的生活情境】',destination.scene,
    '【家长可以怎样陪伴】',destination.action,
    '成长建议是下一阶段的练习方向，不是要求孩子尽快升级，也不能仅凭一次测评认定孩子已经准备好进入下一层级。'
-  ].join('\\n\\n')
+  ].join('\n\n')
  };
  return {sections,level,form_version:submission.form_version,
    evidence_overview:{strongest:strongest?{ability:strongest.name,scenarios:strongest.scenarios,node_ids:strongest.records.map(x=>x.nodeId)}:null,
