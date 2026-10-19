@@ -1,0 +1,1 @@
+window.YizhuPrint=function(){document.body.classList.add("printing-report");window.print();document.body.classList.remove("printing-report")};
