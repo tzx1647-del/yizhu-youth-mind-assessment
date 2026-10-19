@@ -1,6 +1,6 @@
 // Rule-based draft wording, grounded in cross-scenario scored evidence.
 // All generated text is unapproved and must be reviewed by administrator.
-import {SCORING} from '../admin-read/evidence.mjs';
+import {SCORING} from './evidence.mjs';
 const names=['新星级','潜力级','铜牌级','银牌级','金牌级'];
 const orderedAbilities=['自我觉察与省察','情绪觉察与调节','独立认知','相处与自处','选择与承责','价值认知'];
 const focus={
