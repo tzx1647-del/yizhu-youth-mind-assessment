@@ -223,14 +223,16 @@ const growthText = {
   const suggestButton=el("button","依据本次答卷生成02–05章自动初稿");
   suggestButton.type="button";suggestButton.className="secondary";
   suggestButton.addEventListener("click",suggestReport);
-  area.append(suggestButton);
+  if(!locked)area.append(suggestButton);
   area.append(el("p","自动初稿需要你审核。点击后可选择是否填入编辑框；原有保存内容不会被直接覆盖。","muted"));
   const controls=el("div",null,"report-controls");
   const button=el("button","保存02–05草稿");button.id="saveDraft";button.type="button";button.disabled=true;
   const notice=el("span","内容未修改","report-dirty");notice.id="draftDirty";
   button.addEventListener("click",saveReportDraft);
-  controls.append(button,notice);area.append(controls);
-  area.append(el("p","01、06为锁定章节，不提供修改。02–05只保存为待审核内容；正式批准和PDF导出尚未开放。","unanswered"));
+  if(!locked){controls.append(button,notice);area.append(controls);
+   const approvedButton=el("button","最终批准报告");approvedButton.id="approveReport";approvedButton.disabled=!["02","03","04","05"].every(n=>checks[n]===rev);approvedButton.addEventListener("click",approveReport);area.append(approvedButton);
+  }
+  area.append(el("p",locked?"已批准并锁定，正式PDF导出尚待开发。":"01、06固定；02–05须保存后逐章确认，全部确认才能批准。批准后不可再修改。","unanswered"));
  }
  async function suggestReport(){
   if(!selectedSubmissionId||!loadedReportRecord)return;
@@ -247,7 +249,8 @@ const growthText = {
     const area=get("reportDraft").querySelector('textarea[data-section="'+n+'"]');
     if(area)area.value=sections[n];
    }
-   get("saveDraft").disabled=false;
+   reportDirty=true;get("saveDraft").disabled=false;
+   const approve=get("approveReport");if(approve)approve.disabled=true;
    get("draftDirty").textContent="已填入自动初稿，尚未保存；请先逐章审核、修改";
    status("系统已生成并填入02–05章初稿。必须由你审阅并点击保存。");
   }catch(e){status(e.message||"生成失败",true);}
@@ -285,7 +288,7 @@ const growthText = {
   }catch(e){status(e.message||"报告生成失败",true);}
   finally{get("createDraft").disabled=!selectedSubmissionId;}
  }
- function reset(){selectedSubmissionId=null;loadedReportRecord=null;get("createDraft").disabled=true;get("reportDraft").replaceChildren(el("p","请先选择一份测评答卷。","muted"));accessToken="";get("password").value="";get("login").style.display="block";get("workspace").style.display="none";get("who").textContent="";get("detail").replaceChildren(el("p","请选择“查看”以显示中文答卷。","muted"));invitationById.clear();}
+ function reset(){selectedSubmissionId=null;loadedReportRecord=null;reportDirty=false;get("createDraft").disabled=true;get("reportDraft").replaceChildren(el("p","请先选择一份测评答卷。","muted"));accessToken="";get("password").value="";get("login").style.display="block";get("workspace").style.display="none";get("who").textContent="";get("detail").replaceChildren(el("p","请选择“查看”以显示中文答卷。","muted"));invitationById.clear();}
  async function adminGet(path){
   if(!accessToken)throw Error("请重新登录");
   const {res,data}=await jsonFetch(endpoint+"/"+path,{headers:{"apikey":publishable,"Authorization":"Bearer "+accessToken}});
