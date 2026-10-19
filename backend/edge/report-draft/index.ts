@@ -32,15 +32,39 @@ Deno.serve(async req=>{
  if(!['GET','POST'].includes(req.method))return respond(405,{error:'Method not allowed'},origin);
  if(!base||!service)return respond(503,{error:'Backend unavailable'},origin);
  const path=new URL(req.url).pathname;
- const m=path.match(/\/submissions\/([0-9a-f-]{36})\/draft(\/edit|\/suggest)?$/);
+ const m=path.match(/\/submissions\/([0-9a-f-]{36})\/draft(\/edit|\/suggest|\/review|\/approve)?$/);
  if(!m)return respond(404,{error:'Not found'},origin);
- const id=m[1],editing=m[2]==='/edit',suggesting=m[2]==='/suggest';
+ const id=m[1],editing=m[2]==='/edit',suggesting=m[2]==='/suggest',reviewing=m[2]==='/review',approving=m[2]==='/approve';
+ if((reviewing||approving)&&req.method!=='POST')return respond(405,{error:'POST required'},origin);
  if(suggesting&&req.method!=='POST')return respond(405,{error:'POST required'},origin);
  if(editing&&req.method!=='POST')return respond(405,{error:'POST required'},origin);
  try{
   const admin=await authorized(req);
   if(!admin)return respond(403,{error:'Administrator access denied'},origin);
   const found=await api('parent_report_reviews?select=id,submission_id,report_template_version,review_status,draft_json,created_at&submission_id=eq.'+id+'&limit=1');
+  if(reviewing||approving){
+   if(found.length!==1)return respond(404,{error:'Report draft not found'},origin);
+   if(found[0].review_status!=='needs_review')return respond(409,{error:'Report is locked or not reviewable'},origin);
+   let payload;
+   try{payload=await req.json();}catch{return respond(400,{error:'Invalid request'},origin);}
+   if(!payload||!Number.isInteger(payload.expected_revision)||payload.expected_revision<0||
+      (reviewing&&!['02','03','04','05'].includes(payload.section))||
+      (approving&&payload.confirm!==true)){
+    return respond(400,{error:'Invalid review request'},origin);
+   }
+   const rpc=reviewing?'confirm_demo_report_section':'approve_demo_parent_report';
+   const parameters=reviewing?
+    {p_report_id:found[0].id,p_revision:payload.expected_revision,p_section:payload.section,p_admin:admin}:
+    {p_report_id:found[0].id,p_revision:payload.expected_revision,p_admin:admin};
+   const response=await fetch(base+'/rest/v1/rpc/'+rpc,{method:'POST',headers:{...hdr,'Content-Type':'application/json'},body:JSON.stringify(parameters)});
+   if(!response.ok){
+    const error=await response.json().catch(()=>({}));
+    if(['40001','P0001','P0002'].includes(error.code))return respond(409,{error:'报告版本变化、未完成逐章审核或已被锁定，请重新打开报告'},origin);
+    return respond(400,{error:'审核未通过：请检查章节内容及审核状态'},origin);
+   }
+   const updated=await response.json();
+   return respond(200,{item:{...found[0],review_status:approving?'approved':'needs_review',draft_json:updated},approved:approving},origin);
+  }
   if(suggesting){
    const submissions=await api('assessment_submissions?select=id,invitation_id,form_code,form_version,is_simulation,answers,scoring_result&is_simulation=eq.true&id=eq.'+id+'&limit=1');
    if(submissions.length!==1)return respond(404,{error:'Simulation submission not found'},origin);
