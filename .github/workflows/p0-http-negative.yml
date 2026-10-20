@@ -1,0 +1,22 @@
+name: P0 HTTP negative smoke (synthetic only)
+on:
+  push:
+    branches:
+      - dev/online-backend-v1
+    paths:
+      - '.github/workflows/p0-http-negative.yml'
+      - 'tests/p0-http-negative.mjs'
+  workflow_dispatch:
+jobs:
+  negative-http:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Invalid-request and unauthenticated HTTP checks
+        run: node tests/p0-http-negative.mjs
